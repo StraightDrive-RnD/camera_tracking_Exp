@@ -1,591 +1,747 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Camera probe — ball tracker bring-up</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0A1418">
+<title>Bowler's End — shot side tracker</title>
 <style>
 :root{
-  --paper:#F7F6F1;
-  --grid:#E4E2D8;
-  --grid-major:#D6D3C6;
-  --ink:#1C1B18;
-  --muted:#6F6D64;
-  --rule:#CBC8BB;
-  --ic:#F2C230;
-  --ok:#2E7D5B;
-  --warn:#C77A16;
-  --bad:#C4452D;
-  --net:#2B5FA8;
-  --mono:'JetBrains Mono',ui-monospace,monospace;
-  --disp:'Space Grotesk',system-ui,sans-serif;
+  --ink:#0A1418;          /* night pitch */
+  --ink2:#111F26;
+  --line:#1E333D;
+  --chalk:#E8EFEE;        /* crease paint */
+  --dim:#7C9299;
+  --off:#3FD0C9;          /* off side  */
+  --leg:#FFB03A;          /* leg side  */
+  --straight:#C9D6D3;
+  --cherry:#E2453A;       /* the ball  */
+  --ok:#7CE08A;
 }
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  font-family:var(--disp);
-  color:var(--ink);
-  background-color:var(--paper);
-  background-image:
-    linear-gradient(var(--grid) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
-    linear-gradient(var(--grid-major) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid-major) 1px,transparent 1px);
-  background-size:8px 8px,8px 8px,40px 40px,40px 40px;
-  -webkit-font-smoothing:antialiased;
-  padding:0 0 64px;
-}
-.wrap{max-width:760px;margin:0 auto;padding:0 16px}
-header{padding:28px 0 20px;border-bottom:2px solid var(--ink);margin-bottom:24px}
-h1{font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-0.02em}
-.sub{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.6}
-.tag{display:inline-block;background:var(--ic);border:1px solid var(--ink);padding:1px 7px;font-family:var(--mono);font-size:11px;font-weight:500;margin-right:6px}
-section{background:rgba(255,255,255,.72);border:1px solid var(--rule);padding:16px;margin-bottom:16px}
-h2{font-size:11px;font-family:var(--mono);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-h2 .idx{color:var(--muted);font-weight:400}
-p.note{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 14px}
-button{font-family:var(--disp);font-size:14px;font-weight:500;padding:10px 16px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;border-radius:0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--chalk);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh}
+.mono{font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+
+/* ---------- stage ---------- */
+#stage{position:relative;flex:1 1 auto;min-height:0;background:#000;overflow:hidden}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#ov{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+
+#topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:6px;padding:8px;
+  align-items:center;pointer-events:none;
+  background:linear-gradient(#000A,transparent)}
+.pill{font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;
+  border:1px solid var(--line);border-radius:99px;background:#0A1418CC;color:var(--dim)}
+.pill b{color:var(--chalk);font-weight:600}
+.pill.hot{border-color:var(--cherry);color:var(--cherry)}
+.pill.live{border-color:var(--ok);color:var(--ok)}
+#mic{width:56px;height:6px;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:#0A1418CC}
+#micfill{height:100%;width:0%;background:var(--ok);transition:width .05s linear}
+
+/* verdict */
+#verdict{position:absolute;left:0;right:0;top:38%;text-align:center;pointer-events:none;
+  opacity:0;transform:scale(.94);transition:opacity .12s,transform .12s}
+#verdict.show{opacity:1;transform:scale(1)}
+#vside{font-size:clamp(34px,12vw,86px);font-weight:800;letter-spacing:-.03em;line-height:.9;
+  text-shadow:0 4px 30px #000}
+#vsub{margin-top:8px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--chalk);
+  text-shadow:0 2px 12px #000}
+
+#hint{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;font-size:12px;
+  color:var(--dim);text-shadow:0 2px 8px #000;pointer-events:none}
+
+/* ---------- panel ---------- */
+#panel{flex:0 0 auto;background:var(--ink);border-top:1px solid var(--line);
+  max-height:52dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.row{display:flex;gap:8px;padding:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-size:13px;font-weight:600;color:var(--chalk);background:var(--ink2);
+  border:1px solid var(--line);border-radius:10px;padding:11px 14px;min-height:44px}
 button:active{transform:translateY(1px)}
-button:disabled{opacity:.35;cursor:not-allowed}
-button.primary{background:var(--ic)}
-button:focus-visible{outline:2px solid var(--net);outline-offset:2px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-label.f{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
-select,input[type=number]{font-family:var(--mono);font-size:13px;padding:8px;border:1px solid var(--rule);background:#fff;color:var(--ink);width:100%;border-radius:0}
-input[type=range]{width:100%;accent-color:var(--net)}
-.field{flex:1 1 150px;min-width:130px;margin-bottom:10px}
-video{width:100%;background:#111;display:block;border:1px solid var(--ink)}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
-.stat{background:#fff;padding:10px 12px}
-.stat .k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
-.stat .v{font-family:var(--mono);font-size:19px;font-weight:700;line-height:1.1}
-.stat .u{font-size:11px;font-weight:400;color:var(--muted)}
-.v.ok{color:var(--ok)} .v.warn{color:var(--warn)} .v.bad{color:var(--bad)}
-canvas.trace{width:100%;height:110px;display:block;border:1px solid var(--rule);background:#fff}
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
-th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
-th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
-td.val{word-break:break-word;color:var(--net)}
-.scroll{max-height:280px;overflow:auto;border:1px solid var(--rule)}
-.msg{font-family:var(--mono);font-size:12px;padding:9px 11px;border-left:3px solid var(--muted);background:#fff;margin-bottom:10px;line-height:1.5}
-.msg.bad{border-color:var(--bad);color:var(--bad)}
-.msg.ok{border-color:var(--ok);color:var(--ok)}
-.pill{font-family:var(--mono);font-size:10px;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
-.pill.y{color:var(--ok)} .pill.n{color:var(--bad)}
-.legend{font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;gap:14px;margin-top:6px;flex-wrap:wrap}
-.legend i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:-1px}
-.hidden{display:none}
-footer{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding-top:24px;line-height:1.7}
-@media (prefers-reduced-motion:no-preference){section{animation:in .3s ease both}}
-@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+button.primary{background:var(--cherry);border-color:var(--cherry);color:#150404}
+button.ghost{background:transparent}
+button[aria-pressed="true"]{border-color:var(--off);color:var(--off)}
+button:focus-visible{outline:2px solid var(--off);outline-offset:2px}
+.grow{flex:1 1 120px}
+#swatch{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+  background:hsl(52 95% 55%);align-self:center;flex:0 0 auto}
+
+.sec{border-top:1px solid var(--line);padding:10px}
+.sec h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.ctl{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+.ctl label{flex:0 0 116px;color:var(--dim);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.ctl input[type=range]{flex:1;accent-color:var(--off);height:28px}
+.ctl .val{flex:0 0 48px;text-align:right;font-size:12px;color:var(--chalk)}
+select{font:inherit;font-size:13px;background:var(--ink2);color:var(--chalk);border:1px solid var(--line);
+  border-radius:10px;padding:10px;min-height:44px}
+
+/* wagon wheel */
+#wheelWrap{display:flex;gap:12px;align-items:center;padding:10px}
+#wheel{width:150px;height:82px;flex:0 0 auto}
+#wstats{font-size:12px;color:var(--dim);line-height:1.7}
+#wstats b{color:var(--chalk);font-weight:600}
+
+/* log */
+#log{padding:0 10px 14px}
+.entry{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
+  padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.entry .n{color:var(--dim);font-size:11px}
+.bar{position:relative;height:8px;background:#0F1D24;border-radius:99px;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;width:2px;background:var(--dim);left:50%}
+.bar u{position:absolute;top:0;bottom:0;border-radius:99px}
+.tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.empty{color:var(--dim);font-size:12px;padding:14px 0;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header>
-  <h1>Camera probe</h1>
-  <div class="sub"><span class="tag">STEP 1</span>Ball tracker bring-up · measures what this phone actually delivers</div>
-</header>
-
-<section>
-  <h2><span>Camera access</span><span class="idx">01</span></h2>
-  <p class="note">Device names stay hidden until permission is granted. Serve this over HTTPS or the camera will not open at all.</p>
-  <div class="row">
-    <button class="primary" id="btnGrant">Grant camera access</button>
-    <button id="btnRefresh" disabled>Refresh list</button>
-  </div>
-  <div id="grantMsg"></div>
-  <div id="devWrap" class="hidden">
-    <label class="f" for="devSel">Camera</label>
-    <select id="devSel"></select>
-    <p class="note" style="margin:10px 0 0">On most phones the telephoto module appears as a separate entry. If it does not, use the zoom control in section 05 instead.</p>
-  </div>
-</section>
-
-<section>
-  <h2><span>Open stream</span><span class="idx">02</span></h2>
-  <div class="row">
-    <div class="field">
-      <label class="f" for="resSel">Resolution</label>
-      <select id="resSel">
-        <option value="640x480">640 × 480</option>
-        <option value="1280x720" selected>1280 × 720</option>
-        <option value="1920x1080">1920 × 1080</option>
-        <option value="2560x1440">2560 × 1440</option>
-        <option value="3840x2160">3840 × 2160</option>
-      </select>
-    </div>
-    <div class="field">
-      <label class="f" for="fpsSel">Frame rate request</label>
-      <select id="fpsSel">
-        <option value="30">30</option>
-        <option value="60" selected>60</option>
-        <option value="120">120</option>
-        <option value="240">240</option>
-      </select>
-    </div>
-  </div>
-  <div class="row">
-    <button class="primary" id="btnStart" disabled>Start stream</button>
-    <button id="btnStop" disabled>Stop</button>
-  </div>
-  <div id="streamMsg"></div>
+<div id="stage">
   <video id="vid" playsinline muted autoplay></video>
-  <div id="actual" class="stat-grid hidden" style="margin-top:12px"></div>
-</section>
+  <canvas id="ov"></canvas>
 
-<section>
-  <h2><span>Measured frame rate</span><span class="idx">03</span></h2>
-  <p class="note">The reported setting and the delivered rate often disagree. This counts real frames through requestVideoFrameCallback and uses capture timestamps, not wall clock.</p>
-  <div class="row">
-    <button class="primary" id="btnFps" disabled>Run 300-frame test</button>
-    <button id="btnSweep" disabled>Sweep all modes</button>
+  <div id="topbar">
+    <span class="pill" id="pState">idle</span>
+    <span class="pill mono" id="pFps">– fps</span>
+    <span class="pill mono" id="pBlob">0 blobs</span>
+    <div id="mic"><div id="micfill"></div></div>
   </div>
-  <div id="fpsMsg"></div>
-  <div id="fpsStats" class="stat-grid hidden"></div>
-  <canvas class="trace" id="trace" width="700" height="110"></canvas>
-  <div class="legend">
-    <span><i style="background:var(--ok)"></i>frame interval</span>
-    <span><i style="background:var(--bad)"></i>late / dropped</span>
-    <span><i style="background:var(--net)"></i>nominal</span>
-  </div>
-  <div id="sweepWrap" class="hidden" style="margin-top:14px">
-    <div class="scroll"><table id="sweepTbl"><thead><tr><th>Requested</th><th>Got</th><th>Measured fps</th><th>Jitter</th></tr></thead><tbody></tbody></table></div>
-  </div>
-</section>
 
-<section>
-  <h2><span>Processing budget</span><span class="idx">04</span></h2>
-  <p class="note">Runs the real pipeline — downscale, grayscale, frame difference, threshold, connected components — and reports cost per frame. This must sit well under one frame interval or the detector will fall behind.</p>
+  <div id="verdict"><div id="vside">—</div><div id="vsub"></div></div>
+  <div id="hint">Start the camera, then tap the video where the batsman stands.</div>
+</div>
+
+<div id="panel">
   <div class="row">
-    <div class="field">
-      <label class="f" for="procSel">Processing size</label>
-      <select id="procSel">
-        <option value="320x180">320 × 180</option>
-        <option value="480x270" selected>480 × 270</option>
-        <option value="640x360">640 × 360</option>
-        <option value="960x540">960 × 540</option>
+    <button id="btnCam" class="primary grow">Start camera</button>
+    <button id="btnMic" class="grow">Add mic</button>
+    <button id="btnArm" class="grow" disabled>Arm</button>
+  </div>
+  <div class="row">
+    <select id="hand">
+      <option value="R">Right-hand bat</option>
+      <option value="L">Left-hand bat</option>
+    </select>
+    <button id="btnSwap" class="ghost" aria-pressed="false">Mirror sides</button>
+    <button id="btnDemo" class="ghost">Run demo shot</button>
+    <button id="btnClear" class="ghost">Clear log</button>
+  </div>
+
+  <div id="wheelWrap">
+    <canvas id="wheel" width="300" height="164"></canvas>
+    <div id="wstats">
+      <div><b id="sOff">0</b> off side</div>
+      <div><b id="sStr">0</b> straight</div>
+      <div><b id="sLeg">0</b> leg side</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Ball colour</h2>
+    <div class="row" style="padding:0 0 6px">
+      <select id="ballCol">
+        <option value="52">Yellow</option>
+        <option value="72">Fluoro yellow-green</option>
+        <option value="35">Orange / golden</option>
+        <option value="2">Red</option>
+        <option value="330">Pink</option>
+        <option value="-1">White</option>
       </select>
+      <select id="mode">
+        <option value="both">Motion + colour</option>
+        <option value="colour">Colour only</option>
+        <option value="motion">Motion only</option>
+      </select>
+      <button id="btnSample" class="ghost" aria-pressed="false">Sample from video</button>
+      <span id="swatch" title="target colour"></span>
     </div>
-    <div class="field">
-      <label class="f" for="thrIn">Diff threshold</label>
-      <input type="number" id="thrIn" value="24" min="1" max="255">
+    <div class="ctl"><label>Hue width</label><input id="sHue" type="range" min="4" max="60" value="26"><span class="val mono" id="vHue">26</span></div>
+    <div class="ctl"><label>Min saturation</label><input id="sSat" type="range" min="5" max="90" value="28"><span class="val mono" id="vSat">28%</span></div>
+    <div class="ctl"><label>Min brightness</label><input id="sVal" type="range" min="5" max="95" value="25"><span class="val mono" id="vVal">25%</span></div>
+  </div>
+
+  <div class="sec">
+    <h2>Tuning</h2>
+    <div class="ctl"><label>Pixel change</label><input id="sDiff" type="range" min="6" max="70" value="22"><span class="val mono" id="vDiff">22</span></div>
+    <div class="ctl"><label>Min ball px</label><input id="sMin" type="range" min="1" max="40" value="3"><span class="val mono" id="vMin">3</span></div>
+    <div class="ctl"><label>Max ball px</label><input id="sMax" type="range" min="20" max="1200" value="420"><span class="val mono" id="vMax">420</span></div>
+    <div class="ctl"><label>Contact jolt</label><input id="sJolt" type="range" min="10" max="120" value="42"><span class="val mono" id="vJolt">42</span></div>
+    <div class="ctl"><label>Straight band</label><input id="sStraight" type="range" min="1" max="25" value="7"><span class="val mono" id="vStraight">7%</span></div>
+    <div class="ctl"><label>Read window</label><input id="sWin" type="range" min="120" max="800" step="20" value="360"><span class="val mono" id="vWin">360</span></div>
+    <div class="ctl"><label>Detail</label><input id="sRes" type="range" min="160" max="416" step="32" value="288"><span class="val mono" id="vRes">288</span></div>
+    <div class="row" style="padding:4px 0">
+      <button id="btnMask" class="ghost" aria-pressed="false">Show motion mask</button>
+      <button id="btnZone" class="ghost" aria-pressed="true">Use contact zone</button>
+      <button id="btnAudio" class="ghost" aria-pressed="true">Sound confirms contact</button>
     </div>
   </div>
-  <div class="row"><button class="primary" id="btnBench" disabled>Run 120-frame benchmark</button></div>
-  <div id="benchMsg"></div>
-  <div id="benchStats" class="stat-grid hidden"></div>
-</section>
 
-<section>
-  <h2><span>Manual controls</span><span class="idx">05</span></h2>
-  <p class="note">Autofocus hunting between the near ball and the far net will blur exactly the frames you need. Lock what this phone lets you lock.</p>
-  <div id="ctrls"><div class="msg">Start a stream to see which controls this camera exposes.</div></div>
-</section>
-
-<section>
-  <h2><span>Full capability dump</span><span class="idx">06</span></h2>
-  <div class="scroll"><table id="capTbl"><thead><tr><th style="width:38%">Key</th><th>Capability</th><th style="width:22%">Current</th></tr></thead><tbody></tbody></table></div>
-</section>
-
-<section>
-  <h2><span>Export</span><span class="idx">07</span></h2>
-  <p class="note">Saves everything measured so far as JSON. Run this on each candidate phone and compare the files side by side.</p>
-  <div class="row">
-    <button class="primary" id="btnSave" disabled>Download results</button>
-    <button id="btnCopy" disabled>Copy to clipboard</button>
+  <div class="sec">
+    <h2>Deliveries</h2>
+    <div id="log"><div class="empty">Nothing tracked yet.</div></div>
   </div>
-  <div id="saveMsg"></div>
-</section>
-
-<footer>
-  Ball tracker bring-up · step 1 of 7<br>
-  Next: frame recorder with ring buffer
-</footer>
-
 </div>
 
 <script>
+"use strict";
+/* ============================================================
+   Bowler's-end shot-side tracker
+   Vision: frame differencing -> blob -> nearest-neighbour track
+   Contact: lateral jolt / direction flip / area burst (+ optional mic transient)
+   Verdict: post-contact lateral drift, mapped to off/leg by batter's hand
+   ============================================================ */
+
 const $ = id => document.getElementById(id);
-const vid = $('vid');
-let stream = null, track = null, wakeLock = null;
-const results = { userAgent: navigator.userAgent, probedAt: new Date().toISOString(), devices: [], sessions: [], sweep: [], benchmarks: [] };
+const V=$('vid'), OV=$('ov'), ox=OV.getContext('2d');
+const PC=document.createElement('canvas'), px=PC.getContext('2d',{willReadFrequently:true});
+const MC=document.createElement('canvas'), mc=MC.getContext('2d');
 
-function msg(el, text, kind){ $(el).innerHTML = '<div class="msg ' + (kind||'') + '">' + text + '</div>'; }
-function clear(el){ $(el).innerHTML = ''; }
-function stat(k, v, u, cls){ return '<div class="stat"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+(u?' <span class="u">'+u+'</span>':'')+'</div></div>'; }
+const cfg={
+  diff:22, minA:3, maxA:420, jolt:42, straight:0.07, win:360, procW:288,
+  showMask:false, useZone:true, useAudio:true, hand:'R', mirror:false,
+  hue:52, hueW:26, sat:0.28, val:0.25, mode:'both'
+};
+let sampling=false;
 
-async function keepAwake(){
-  try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
-}
+let stream=null, running=false, audioCtx=null, analyser=null, freq=null, micStream=null;
+let pw=0, ph=0, prevGray=null, curGray=null, mask=null, cmask=null, pers=null, labels=null, stack=null;
+let lastT=0, fps=0, blobCount=0;
 
-/* ---------- 01 devices ---------- */
+let phase='idle';            // idle | armed | tracking | contact | cooldown
+let track=[];                // [{x,y,t,area}]
+let post=[];                 // points after contact
+let contactPt=null, contactT=0, misses=0, cooldownUntil=0;
+let zone=null;               // {x,y} in proc coords, tap-set
+let shots=[];                // log
+let flashOnset=0, micLevel=0, onsets=[], releaseT=0;
 
-$('btnGrant').onclick = async () => {
-  try {
-    const s = await navigator.mediaDevices.getUserMedia({ video: true });
-    s.getTracks().forEach(t => t.stop());
-    clear('grantMsg');
-    await listDevices();
-    $('devWrap').classList.remove('hidden');
-    $('btnRefresh').disabled = false;
-    $('btnStart').disabled = false;
-    keepAwake();
-  } catch (e) {
-    msg('grantMsg', 'Camera did not open: ' + e.name + '. Check that this page is on HTTPS and that the browser has camera permission.', 'bad');
+/* ---------------- camera ---------------- */
+async function startCam(){
+  if(running){ stopAll(); return; }
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:60} },
+      audio:false
+    });
+  }catch(e){
+    hint('Camera blocked: '+e.message+'. Serve this file over https (or localhost).');
+    return;
   }
-};
-$('btnRefresh').onclick = listDevices;
-
-async function listDevices(){
-  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
-  results.devices = devs.map(d => ({ deviceId: d.deviceId, label: d.label, groupId: d.groupId }));
-  $('devSel').innerHTML = devs.map((d,i) => '<option value="'+d.deviceId+'">'+(d.label || ('camera '+(i+1)))+'</option>').join('');
+  V.srcObject=stream; await V.play().catch(()=>{});
+  running=true; phase='armed';
+  $('btnCam').textContent='Stop camera'; $('btnArm').disabled=false;
+  hint('Tap the video where the batsman stands to set the contact zone.');
+  sizeUp(); pump();
+  if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{});
+}
+function stopAll(){
+  running=false; phase='idle';
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream=null; V.srcObject=null; $('btnCam').textContent='Start camera'; $('btnArm').disabled=true;
+  ox.clearRect(0,0,OV.width,OV.height); paintState();
 }
 
-/* ---------- 02 stream ---------- */
-
-async function openStream(deviceId, w, h, fps){
-  if (stream) stream.getTracks().forEach(t => t.stop());
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      deviceId: deviceId ? { exact: deviceId } : undefined,
-      width: { ideal: w }, height: { ideal: h }, frameRate: { ideal: fps }
-    }, audio: false
-  });
-  track = stream.getVideoTracks()[0];
-  vid.srcObject = stream;
-  await vid.play().catch(()=>{});
-  return track;
+async function startMic(){
+  if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; analyser=null;
+    $('btnMic').textContent='Add mic'; $('micfill').style.width='0%'; return; }
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+  }catch(e){ hint('Mic blocked: '+e.message); return; }
+  audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+  await audioCtx.resume();
+  const src=audioCtx.createMediaStreamSource(micStream);
+  analyser=audioCtx.createAnalyser(); analyser.fftSize=1024; analyser.smoothingTimeConstant=0;
+  src.connect(analyser); freq=new Uint8Array(analyser.frequencyBinCount);
+  $('btnMic').textContent='Mic on';
 }
 
-$('btnStart').onclick = async () => {
-  const [w,h] = $('resSel').value.split('x').map(Number);
-  const fps = Number($('fpsSel').value);
-  msg('streamMsg', 'Opening…');
-  try {
-    await openStream($('devSel').value, w, h, fps);
-    clear('streamMsg');
-    showActual(w, h, fps);
-    renderCaps();
-    renderControls();
-    $('btnStop').disabled = false;
-    $('btnFps').disabled = false;
-    $('btnSweep').disabled = false;
-    $('btnBench').disabled = false;
-    $('btnSave').disabled = false;
-    $('btnCopy').disabled = false;
-    if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype))
-      msg('fpsMsg', 'This browser has no requestVideoFrameCallback. Frame timing will be unreliable — use Chrome on Android.', 'bad');
-  } catch (e) {
-    msg('streamMsg', 'Could not open that mode: ' + e.name + ' — ' + e.message, 'bad');
+/* size the processing + overlay canvases to the video */
+function sizeUp(){
+  const vw=V.videoWidth, vh=V.videoHeight; if(!vw) return false;
+  const w=Math.round(cfg.procW), h=Math.max(2,Math.round(w*vh/vw));
+  if(w!==pw||h!==ph){
+    pw=w; ph=h; PC.width=pw; PC.height=ph;
+    prevGray=null; curGray=new Uint8Array(pw*ph); mask=new Uint8Array(pw*ph);
+    cmask=new Uint8Array(pw*ph); pers=new Uint16Array(pw*ph);
+    labels=new Int32Array(pw*ph); stack=new Int32Array(pw*ph);
+    zone=null;
   }
-};
-
-$('btnStop').onclick = () => {
-  if (stream) stream.getTracks().forEach(t => t.stop());
-  stream = track = null; vid.srcObject = null;
-  ['btnStop','btnFps','btnSweep','btnBench'].forEach(b => $(b).disabled = true);
-};
-
-function showActual(reqW, reqH, reqFps){
-  const s = track.getSettings();
-  const match = (s.width === reqW && s.height === reqH);
-  $('actual').classList.remove('hidden');
-  $('actual').innerHTML =
-    stat('Requested', reqW+'×'+reqH, '@'+reqFps) +
-    stat('Delivered', (s.width||'?')+'×'+(s.height||'?'), '@'+(s.frameRate ? Math.round(s.frameRate) : '?'), match ? 'ok' : 'warn') +
-    stat('Facing', s.facingMode || '—') +
-    stat('Zoom', s.zoom != null ? (+s.zoom).toFixed(2) : '—', '×');
-  results.sessions.push({ requested:{w:reqW,h:reqH,fps:reqFps}, settings:s, capabilities: safeCaps() });
-}
-
-function safeCaps(){ try { return track.getCapabilities ? track.getCapabilities() : {}; } catch(e){ return {}; } }
-
-/* ---------- 03 frame rate ---------- */
-
-function measureFrames(n, onDone){
-  const times = [], intervals = [];
-  let prev = null, first = null, presentedStart = null, presentedEnd = null, count = 0, useMedia = true;
-  function cb(now, meta){
-    const t = (meta && typeof meta.mediaTime === 'number' && meta.mediaTime > 0) ? meta.mediaTime * 1000 : now;
-    if (meta && typeof meta.mediaTime === 'number' && meta.mediaTime <= 0) useMedia = false;
-    if (first === null) { first = t; presentedStart = meta ? meta.presentedFrames : null; }
-    if (prev !== null) intervals.push(t - prev);
-    prev = t; times.push(t);
-    if (meta) presentedEnd = meta.presentedFrames;
-    if (++count < n) vid.requestVideoFrameCallback(cb);
-    else onDone({ intervals, span: t - first, count, useMedia,
-                  presented: (presentedStart != null && presentedEnd != null) ? presentedEnd - presentedStart : null });
+  const r=V.getBoundingClientRect();
+  if(OV.width!==Math.round(r.width)||OV.height!==Math.round(r.height)){
+    OV.width=Math.round(r.width); OV.height=Math.round(r.height);
   }
-  vid.requestVideoFrameCallback(cb);
+  return true;
 }
 
-function analyse(r){
-  const iv = r.intervals.slice().sort((a,b) => a-b);
-  const median = iv[Math.floor(iv.length/2)];
-  const mean = r.intervals.reduce((a,b)=>a+b,0) / r.intervals.length;
-  const p95 = iv[Math.floor(iv.length*0.95)];
-  const sd = Math.sqrt(r.intervals.reduce((a,b)=>a+(b-mean)*(b-mean),0) / r.intervals.length);
-  const fps = 1000 / median;
-  const late = r.intervals.filter(x => x > median*1.5).length;
-  return { median, mean, p95, sd, fps, late, min: iv[0], max: iv[iv.length-1],
-           dropped: r.presented != null ? Math.max(0, r.presented - r.count) : null };
+/* letterbox mapping: video is object-fit:contain inside the overlay */
+function fitBox(){
+  const vw=V.videoWidth||16, vh=V.videoHeight||9, W=OV.width, H=OV.height;
+  const s=Math.min(W/vw,H/vh), dw=vw*s, dh=vh*s;
+  return {ox:(W-dw)/2, oy:(H-dh)/2, sx:dw/pw, sy:dh/ph};
+}
+const toScreen=(x,y)=>{ const f=fitBox(); return [f.ox+x*f.sx, f.oy+y*f.sy]; };
+
+/* ---------------- main loop ---------------- */
+function pump(){
+  if(!running) return;
+  if(V.requestVideoFrameCallback) V.requestVideoFrameCallback(()=>{ step(); pump(); });
+  else requestAnimationFrame(()=>{ step(); pump(); });
 }
 
-$('btnFps').onclick = () => {
-  msg('fpsMsg','Measuring 300 frames — hold the phone still…');
-  $('btnFps').disabled = true;
-  measureFrames(300, r => {
-    $('btnFps').disabled = false;
-    const a = analyse(r);
-    clear('fpsMsg');
-    const cls = a.fps >= 55 ? 'ok' : a.fps >= 28 ? 'warn' : 'bad';
-    const jcls = a.sd < 2 ? 'ok' : a.sd < 6 ? 'warn' : 'bad';
-    $('fpsStats').classList.remove('hidden');
-    $('fpsStats').innerHTML =
-      stat('Measured', a.fps.toFixed(1), 'fps', cls) +
-      stat('Median interval', a.median.toFixed(2), 'ms') +
-      stat('Jitter (σ)', a.sd.toFixed(2), 'ms', jcls) +
-      stat('p95 interval', a.p95.toFixed(2), 'ms') +
-      stat('Late frames', a.late + ' / ' + r.intervals.length, '', a.late === 0 ? 'ok' : 'warn') +
-      stat('Dropped', a.dropped != null ? a.dropped : '—', '', a.dropped ? 'warn' : '');
-    if (!r.useMedia) msg('fpsMsg','mediaTime was not usable, so these intervals come from the display clock. Treat the jitter figure as pessimistic.','warn');
-    drawTrace(r.intervals, a.median);
-    results.sessions[results.sessions.length-1].fpsTest = a;
-  });
-};
+function step(){
+  if(!sizeUp()) return;
+  const t=performance.now();
+  if(lastT) fps=fps*0.85+(1000/Math.max(1,t-lastT))*0.15;
+  lastT=t;
 
-function drawTrace(intervals, nominal){
-  const c = $('trace'), ctx = c.getContext('2d');
-  const W = c.width, H = c.height;
-  ctx.clearRect(0,0,W,H);
-  const scale = H / (nominal * 3);
-  ctx.strokeStyle = '#2B5FA8'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, H - nominal*scale); ctx.lineTo(W, H - nominal*scale); ctx.stroke();
-  ctx.setLineDash([]);
-  const bw = Math.max(1, W / intervals.length);
-  intervals.forEach((v,i) => {
-    const bh = Math.min(H, v * scale);
-    ctx.fillStyle = v > nominal*1.5 ? '#C4452D' : '#2E7D5B';
-    ctx.fillRect(i*bw, H-bh, Math.max(1,bw-0.5), bh);
-  });
-}
+  px.drawImage(V,0,0,pw,ph);
+  const d=px.getImageData(0,0,pw,ph).data;
+  const wantColour = cfg.mode!=='motion';
 
-const SWEEP = [
-  [640,480,60],[640,480,120],[1280,720,30],[1280,720,60],[1280,720,120],
-  [1920,1080,30],[1920,1080,60],[2560,1440,30],[3840,2160,30]
-];
-
-$('btnSweep').onclick = async () => {
-  $('btnSweep').disabled = true; $('btnFps').disabled = true;
-  $('sweepWrap').classList.remove('hidden');
-  const tb = $('sweepTbl').querySelector('tbody'); tb.innerHTML = '';
-  results.sweep = [];
-  for (const [w,h,f] of SWEEP){
-    msg('fpsMsg','Sweeping ' + w + '×' + h + ' @ ' + f + '…');
-    let row;
-    try {
-      await openStream($('devSel').value, w, h, f);
-      await new Promise(r => setTimeout(r, 500));
-      const s = track.getSettings();
-      const r = await new Promise(res => measureFrames(90, res));
-      const a = analyse(r);
-      row = { req:[w,h,f], got:[s.width,s.height,Math.round(s.frameRate||0)], fps:+a.fps.toFixed(1), jitter:+a.sd.toFixed(2) };
-      const cls = a.fps >= 55 ? 'ok' : a.fps >= 28 ? 'warn' : 'bad';
-      tb.insertAdjacentHTML('beforeend',
-        '<tr><td>'+w+'×'+h+' @'+f+'</td><td class="val">'+s.width+'×'+s.height+' @'+Math.round(s.frameRate||0)+
-        '</td><td><span class="v '+cls+'" style="font-size:12px">'+a.fps.toFixed(1)+'</span></td><td>'+a.sd.toFixed(1)+' ms</td></tr>');
-    } catch(e){
-      row = { req:[w,h,f], error: e.name };
-      tb.insertAdjacentHTML('beforeend','<tr><td>'+w+'×'+h+' @'+f+'</td><td class="val" style="color:var(--bad)">rejected</td><td>—</td><td>—</td></tr>');
+  for(let i=0,j=0;i<curGray.length;i++,j+=4){
+    const r=d[j], g=d[j+1], b=d[j+2];
+    curGray[i]=(r*77+g*151+b*28)>>8;
+    if(wantColour){
+      const hit=colourHit(r,g,b)?1:0;
+      cmask[i]=hit;
+      pers[i]= hit? Math.min(999,pers[i]+1) : 0;   // how long this pixel has been ball-coloured
     }
-    results.sweep.push(row);
   }
-  clear('fpsMsg');
-  $('btnSweep').disabled = false; $('btnFps').disabled = false;
-  renderCaps(); renderControls();
-};
 
-/* ---------- 04 processing benchmark ---------- */
-
-function labelBlobs(bin, w, h, minArea){
-  const parent = [], area = [];
-  const find = x => { while (parent[x] !== x) x = parent[x] = parent[parent[x]]; return x; };
-  const union = (a,b) => { a = find(a); b = find(b); if (a !== b) { parent[b] = a; area[a] += area[b]; area[b] = 0; } };
-  let prevRuns = [], curRuns = [];
-  for (let y = 0; y < h; y++){
-    curRuns.length = 0;
-    let x = 0;
-    while (x < w){
-      if (bin[y*w+x]){
-        const s = x; while (x < w && bin[y*w+x]) x++;
-        const e = x-1, id = parent.length;
-        parent.push(id); area.push(e-s+1);
-        for (let k = 0; k < prevRuns.length; k++){ const r = prevRuns[k]; if (r.s <= e && r.e >= s) union(r.id, id); }
-        curRuns.push({ s, e, id });
-      } else x++;
+  const hadPrev=!!prevGray;
+  let moved=0;
+  if(hadPrev){
+    const th=cfg.diff;
+    mask.fill(0);
+    for(let i=0;i<curGray.length;i++){
+      const a=curGray[i]-prevGray[i];
+      if(a>th||a<-th){ mask[i]=1; moved++; }
     }
-    const t = prevRuns; prevRuns = curRuns; curRuns = t;
+    dilate();
   }
-  let n = 0;
-  for (let i = 0; i < parent.length; i++) if (find(i) === i && area[i] >= minArea) n++;
-  return n;
+  const tmp=prevGray; prevGray=curGray; curGray=tmp||new Uint8Array(pw*ph);
+  if(!hadPrev) return;
+
+  const shake = cfg.mode!=='colour' && moved > mask.length*0.14;   // whole scene moved: ignore
+
+  // A frame difference lights up BOTH where the ball is and where it just was.
+  // ANDing with colour keeps only the real one.
+  if(cfg.mode==='colour'){ mask.set(cmask); dilate(); }
+  else if(cfg.mode==='both'){
+    for(let i=0;i<mask.length;i++) mask[i] = (mask[i] && cmask[i]) ? 1 : 0;
+    dilate();
+  }
+
+  readMic(t);
+  const blobs = shake? [] : findBlobs();
+  blobCount=blobs.length;
+  if(!shake) advance(blobs,t);
+
+  draw(shake);
+  paintState();
 }
 
-$('btnBench').onclick = () => {
-  const [w,h] = $('procSel').value.split('x').map(Number);
-  const thr = Number($('thrIn').value);
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  const ctx = cv.getContext('2d', { willReadFrequently: true });
-  let prevGray = null, frames = 0, blobsTotal = 0;
-  const tDraw = [], tGray = [], tDiff = [], tBlob = [], tAll = [];
-  $('btnBench').disabled = true;
-  msg('benchMsg','Benchmarking ' + w + '×' + h + ' over 120 frames…');
+/* is this pixel the ball's colour? cheap HSV, no allocation */
+function colourHit(r,g,b){
+  const mx = r>g ? (r>b?r:b) : (g>b?g:b);
+  const mn = r<g ? (r<b?r:b) : (g<b?g:b);
+  const v = mx/255;
+  if(v < cfg.val) return false;
+  const dd = mx-mn, s = mx? dd/mx : 0;
+  if(cfg.hue < 0) return s < 0.20 && v > Math.max(cfg.val,0.62);   // white ball: bright + colourless
+  if(s < cfg.sat || dd === 0) return false;
+  let h;
+  if(mx===r) h = 60*(((g-b)/dd)%6);
+  else if(mx===g) h = 60*((b-r)/dd + 2);
+  else h = 60*((r-g)/dd + 4);
+  if(h<0) h += 360;
+  let dh = Math.abs(h - cfg.hue); if(dh>180) dh = 360-dh;
+  return dh <= cfg.hueW;
+}
+function hueRGB(h){
+  if(h<0) return [232,239,238];
+  const f=n=>{const k=(n+h/30)%12; return Math.round(255*(0.55-0.45*Math.max(-1,Math.min(Math.min(k-3,9-k),1))));};
+  return [f(0),f(8),f(4)];
+}
+function updateSwatch(){
+  $('swatch').style.background = cfg.hue<0? '#E8EFEE' : `hsl(${cfg.hue} 95% 55%)`;
+}
+/* tap a stationary ball to learn its exact colour under these lights */
+function sampleColour(cx,cy){
+  px.drawImage(V,0,0,pw,ph);
+  const R=3, x0=Math.max(0,Math.round(cx)-R), y0=Math.max(0,Math.round(cy)-R);
+  const w=Math.min(R*2+1,pw-x0), h=Math.min(R*2+1,ph-y0);
+  const d=px.getImageData(x0,y0,w,h).data;
+  let best=null, bestScore=-1;
+  for(let j=0;j<d.length;j+=4){
+    const r=d[j],g=d[j+1],b=d[j+2];
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    const s=mx?(mx-mn)/mx:0, v=mx/255, score=s*0.7+v*0.3;
+    if(score>bestScore){ bestScore=score; best=[r,g,b,s,v]; }
+  }
+  if(!best) return;
+  const [r,g,b,s,v]=best, mx=Math.max(r,g,b), mn=Math.min(r,g,b), dd=mx-mn;
+  if(dd===0 || s<0.15){ cfg.hue=-1; }
+  else{
+    let hh; if(mx===r) hh=60*(((g-b)/dd)%6); else if(mx===g) hh=60*((b-r)/dd+2); else hh=60*((r-g)/dd+4);
+    cfg.hue = (hh+360)%360;
+    cfg.sat = Math.max(0.12, s*0.55); $('sSat').value=Math.round(cfg.sat*100); $('vSat').textContent=Math.round(cfg.sat*100)+'%';
+    cfg.val = Math.max(0.10, v*0.45); $('sVal').value=Math.round(cfg.val*100); $('vVal').textContent=Math.round(cfg.val*100)+'%';
+  }
+  updateSwatch();
+  $('ballCol').selectedIndex=-1;
+  sampling=false; $('btnSample').setAttribute('aria-pressed','false');
+  cfg.showMask=true; $('btnMask').setAttribute('aria-pressed','true');
+  hint('Colour learned. Mask is on — check the ball lights up and little else, then tap the batsman to set the zone.');
+}
 
-  function step(){
-    const t0 = performance.now();
-    ctx.drawImage(vid, 0, 0, w, h);
-    const img = ctx.getImageData(0, 0, w, h).data;
-    const t1 = performance.now();
-    const gray = new Uint8Array(w*h);
-    for (let i = 0, p = 0; i < gray.length; i++, p += 4)
-      gray[i] = (img[p]*77 + img[p+1]*150 + img[p+2]*29) >> 8;
-    const t2 = performance.now();
-    let blobs = 0;
-    if (prevGray){
-      const bin = new Uint8Array(w*h);
-      for (let i = 0; i < gray.length; i++){
-        const d = gray[i] - prevGray[i];
-        bin[i] = (d > thr || d < -thr) ? 1 : 0;
-      }
-      const t3 = performance.now();
-      blobs = labelBlobs(bin, w, h, 4);
-      const t4 = performance.now();
-      tDiff.push(t3-t2); tBlob.push(t4-t3); tAll.push(t4-t0);
-      blobsTotal += blobs; frames++;
+function dilate(){ // 1px cross dilation so motion-blur streaks join up
+  const src=mask.slice();
+  for(let y=0;y<ph;y++) for(let x=0;x<pw;x++){
+    const i=y*pw+x; if(src[i]) continue;
+    if((x>0&&src[i-1])||(x<pw-1&&src[i+1])||(y>0&&src[i-pw])||(y<ph-1&&src[i+pw])) mask[i]=1;
+  }
+}
+
+function findBlobs(){
+  labels.fill(0);
+  const out=[]; let lab=0;
+  for(let i=0;i<mask.length;i++){
+    if(!mask[i]||labels[i]) continue;
+    lab++; if(lab>500) break;
+    let sp=0; stack[sp++]=i; labels[i]=lab;
+    let area=0,sx=0,sy=0,x0=1e9,x1=-1,y0=1e9,y1=-1,pr=0;
+    while(sp>0){
+      const p=stack[--sp], y=(p/pw)|0, x=p-y*pw;
+      area++; sx+=x; sy+=y; pr+=pers[p];
+      if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      for(let dy=-1;dy<=1;dy++){ const ny=y+dy; if(ny<0||ny>=ph)continue;
+        for(let dx=-1;dx<=1;dx++){ const nx=x+dx; if(nx<0||nx>=pw)continue;
+          const np=ny*pw+nx; if(mask[np]&&!labels[np]){ labels[np]=lab; stack[sp++]=np; } } }
     }
-    tDraw.push(t1-t0); tGray.push(t2-t1);
-    prevGray = gray;
-    if (frames < 120) vid.requestVideoFrameCallback(step);
-    else finish();
+    if(area<cfg.minA||area>cfg.maxA) continue;
+    if(cfg.mode==='colour' && pr/area > 30) continue;   // parked yellow kit, cones, sightscreen
+    out.push({x:sx/area,y:sy/area,area,w:x1-x0+1,h:y1-y0+1});
+  }
+  return out;
+}
+
+/* ---------------- tracking ---------------- */
+function vel(a,b){ const dt=Math.max(8,b.t-a.t)/1000; return {vx:(b.x-a.x)/dt, vy:(b.y-a.y)/dt}; }
+
+function advance(blobs,t){
+  if(phase==='cooldown'){ if(t>cooldownUntil){ phase='armed'; track=[]; } else return; }
+  if(phase==='idle') return;
+
+  // pick the blob that best continues the track
+  let cand=null;
+  if(track.length>=2){
+    const a=track[track.length-2], b=track[track.length-1], v=vel(a,b);
+    const dt=(t-b.t)/1000, gx=b.x+v.vx*dt, gy=b.y+v.vy*dt;
+    const speed=Math.hypot(v.vx,v.vy)*dt;
+    const gate=Math.max(pw*0.05, speed*1.6+pw*0.03);
+    let best=Infinity;
+    for(const b2 of blobs){ const dd=Math.hypot(b2.x-gx,b2.y-gy); if(dd<gate&&dd<best){best=dd;cand=b2;} }
+  } else if(track.length===1){
+    const b=track[0]; let best=Infinity;
+    for(const b2 of blobs){ const dd=Math.hypot(b2.x-b.x,b2.y-b.y);
+      if(dd<pw*0.22&&dd>0.4&&dd<best){best=dd;cand=b2;} }
+  } else {
+    // acquire: densest small blob, preferring one near the contact zone if set
+    let best=-1;
+    for(const b of blobs){
+      const fill=b.area/Math.max(1,b.w*b.h);
+      let s=b.area*(0.5+fill);
+      if(zone&&cfg.useZone) s*= 1/(1+Math.hypot(b.x-zone.x,b.y-zone.y)/(pw*0.5));
+      if(s>best){best=s;cand=b;}
+    }
   }
 
-  function finish(){
-    const avg = a => a.reduce((x,y)=>x+y,0)/a.length;
-    const p95 = a => { const s = a.slice().sort((x,y)=>x-y); return s[Math.floor(s.length*0.95)]; };
-    const total = avg(tAll), worst = p95(tAll);
-    const budget60 = 16.67;
-    const cls = worst < budget60*0.5 ? 'ok' : worst < budget60 ? 'warn' : 'bad';
-    $('benchStats').classList.remove('hidden');
-    $('benchStats').innerHTML =
-      stat('Total / frame', total.toFixed(2), 'ms', cls) +
-      stat('p95', worst.toFixed(2), 'ms', cls) +
-      stat('Draw + read', avg(tDraw).toFixed(2), 'ms') +
-      stat('Grayscale', avg(tGray).toFixed(2), 'ms') +
-      stat('Diff', avg(tDiff).toFixed(2), 'ms') +
-      stat('Blobs', avg(tBlob).toFixed(2), 'ms') +
-      stat('Headroom @60fps', (budget60 - worst).toFixed(2), 'ms', cls) +
-      stat('Blobs / frame', (blobsTotal/frames).toFixed(1));
-    clear('benchMsg');
-    if (worst >= budget60) msg('benchMsg','Over budget at 60 fps. Drop the processing size, or move the diff to WebGL.','bad');
-    $('btnBench').disabled = false;
-    results.benchmarks.push({ size:[w,h], threshold:thr, meanMs:+total.toFixed(3), p95Ms:+worst.toFixed(3),
-      draw:+avg(tDraw).toFixed(3), gray:+avg(tGray).toFixed(3), diff:+avg(tDiff).toFixed(3), blob:+avg(tBlob).toFixed(3) });
+  if(!cand){
+    misses++;
+    if(misses>6){
+      if(phase==='contact'&&post.length>=3) finish(t); else if(phase!=='contact'){ track=[]; if(phase==='tracking') phase='armed'; }
+      misses=0;
+    }
+    return;
   }
-  vid.requestVideoFrameCallback(step);
-};
+  misses=0;
+  const p={x:cand.x,y:cand.y,t,area:cand.area};
 
-/* ---------- 05 manual controls ---------- */
+  if(phase==='contact'){
+    post.push(p);
+    if(t-contactT>=cfg.win) finish(t);
+    return;
+  }
 
-function renderControls(){
-  const caps = safeCaps(), s = track.getSettings(), out = [];
-  const range = (key, label, unit, fmt) => {
-    if (!caps[key] || caps[key].min == null) return '';
-    const c = caps[key], cur = s[key] != null ? s[key] : c.min;
-    return '<div style="margin-bottom:16px"><label class="f" for="c_'+key+'">'+label+
-      ' <span style="color:var(--net)">'+(fmt?fmt(cur):cur)+(unit||'')+'</span>'+
-      ' <span style="float:right;text-transform:none;letter-spacing:0">'+c.min+'–'+c.max+'</span></label>'+
-      '<input type="range" id="c_'+key+'" min="'+c.min+'" max="'+c.max+'" step="'+(c.step||1)+'" value="'+cur+'"></div>';
+  track.push(p);
+  if(track.length>90) track.shift();
+  if(phase==='armed'&&track.length>=3) phase='tracking';
+  if(phase==='tracking'&&track.length>=4) testContact(t);
+}
+
+function testContact(t){
+  const n=track.length;
+  const a=track[n-4], b=track[n-3], c=track[n-2], d=track[n-1];
+  const v1=vel(a,b), v2=vel(c,d);
+  const s1=Math.hypot(v1.vx,v1.vy), s2=Math.hypot(v2.vx,v2.vy);
+  if(s2<cfg.jolt) return;
+
+  const dot=(v1.vx*v2.vx+v1.vy*v2.vy)/Math.max(1e-3,s1*s2);
+  const turned=dot<0.5;                                  // >60° change of heading
+  const lateral=Math.abs(v2.vx)>cfg.jolt && Math.abs(v2.vx)>Math.abs(v1.vx)*2.2;
+  const burst=d.area>c.area*2.0 && d.area>cfg.minA*3;
+  const heard=cfg.useAudio && onsets.length && (t-onsets[onsets.length-1])<140 && releaseT && (t-releaseT)>200;
+
+  if(turned||lateral||burst||heard){
+    phase='contact'; contactPt={x:d.x,y:d.y}; contactT=t; post=[d];
+    if(navigator.vibrate) navigator.vibrate(12);
+  }
+}
+
+/* ---------------- verdict ---------------- */
+function finish(t){
+  const pts=post.slice();
+  phase='cooldown'; cooldownUntil=t+1200; track=[]; post=[];
+  if(pts.length<3){ hint('Contact seen but the ball was lost — raise Detail or lower Pixel change.'); return; }
+  classify(pts, contactPt||pts[0]);
+}
+
+function linFit(pts,key){ // least squares value vs time -> slope per second
+  let n=pts.length,st=0,sv=0,stt=0,stv=0,t0=pts[0].t;
+  for(const p of pts){const tt=(p.t-t0)/1000,vv=p[key];st+=tt;sv+=vv;stt+=tt*tt;stv+=tt*vv;}
+  const den=n*stt-st*st; if(Math.abs(den)<1e-9) return {m:0,b:sv/n,r2:0};
+  const m=(n*stv-st*sv)/den, b=(sv-m*st)/n;
+  let ssr=0,sst=0,mean=sv/n;
+  for(const p of pts){const tt=(p.t-t0)/1000,pr=m*tt+b;ssr+=(p[key]-pr)**2;sst+=(p[key]-mean)**2;}
+  return {m,b,r2:sst>0?Math.max(0,1-ssr/sst):0};
+}
+
+function classify(pts, cp){
+  const fx=linFit(pts,'x'), fy=linFit(pts,'y');
+  const last=pts[pts.length-1];
+  const dx=(last.x-cp.x)/pw;                  // lateral drift, fraction of frame width
+  const dy=(last.y-cp.y)/ph;
+  const vxn=fx.m/pw;                          // frame widths per second
+  const screen = (dx*0.6 + vxn*0.4*((last.t-pts[0].t)/1000)); // blended drift
+  const signed = cfg.mirror? -screen : screen;
+
+  let side, colour;
+  if(Math.abs(signed)<cfg.straight){ side='STRAIGHT'; colour='var(--straight)'; }
+  else {
+    const screenLeft = signed<0;
+    // bowler's-end view: right-hand bat has the off side on screen-left
+    const isOff = (cfg.hand==='R') ? screenLeft : !screenLeft;
+    side = isOff? 'OFF SIDE':'LEG SIDE';
+    colour = isOff? 'var(--off)':'var(--leg)';
+  }
+  const angle = Math.round(Math.atan2(signed, Math.max(0.08,Math.abs(dy)+0.12))*180/Math.PI);
+  const conf = Math.round(100*Math.min(1, (0.35+Math.min(1,Math.abs(signed)/0.22)*0.4) * (0.5+0.5*fx.r2) * Math.min(1,pts.length/6)));
+  const lofted = dy < -0.02 && fy.r2>0.4;
+
+  showVerdict(side, colour, `${angle>0?'+':''}${angle}° · ${conf}% · ${pts.length} pts${lofted?' · lofted':''}`);
+  shots.unshift({side, colour, drift:signed, conf, angle, lofted, at:new Date()});
+  if(shots.length>40) shots.pop();
+  renderLog(); renderWheel();
+}
+
+function showVerdict(side,colour,sub){
+  const el=$('verdict'); $('vside').textContent=side; $('vside').style.color=colour;
+  $('vsub').textContent=sub; el.classList.add('show');
+  clearTimeout(showVerdict._t); showVerdict._t=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+/* ---------------- audio onsets ---------------- */
+function readMic(t){
+  if(!analyser) return;
+  analyser.getByteFrequencyData(freq);
+  const nyq=audioCtx.sampleRate/2, per=nyq/freq.length;
+  const lo=Math.floor(1800/per), hi=Math.min(freq.length,Math.floor(8000/per));
+  let e=0; for(let i=lo;i<hi;i++) e+=freq[i];
+  e/=Math.max(1,hi-lo);
+  micLevel=e;
+  readMic.base = readMic.base===undefined? e : readMic.base*0.94+e*0.06;
+  $('micfill').style.width=Math.min(100,e/1.2)+'%';
+  if(e>Math.max(26, readMic.base*2.1) && t-(readMic.last||0)>130){
+    readMic.last=t; onsets.push(t); flashOnset=t;
+    if(onsets.length>12) onsets.shift();
+    if(phase==='armed'||phase==='idle') releaseT=t;      // first crack = machine release
+  }
+}
+
+/* ---------------- overlay ---------------- */
+function draw(shake){
+  const W=OV.width,H=OV.height,f=fitBox();
+  ox.clearRect(0,0,W,H);
+
+  if(cfg.showMask&&mask){
+    if(MC.width!==pw||MC.height!==ph){ MC.width=pw; MC.height=ph; }
+    const im=mc.createImageData(pw,ph), dd=im.data;
+    const [hr,hg,hb]=hueRGB(cfg.hue), colourOn=cfg.mode!=='motion';
+    for(let i=0,j=0;i<mask.length;i++,j+=4){
+      if(mask[i]){ dd[j]=226; dd[j+1]=69; dd[j+2]=58; dd[j+3]=210; }       // what the tracker sees
+      else if(colourOn&&cmask[i]){ dd[j]=hr; dd[j+1]=hg; dd[j+2]=hb; dd[j+3]=80; } // colour only
+    }
+    mc.putImageData(im,0,0);
+    ox.imageSmoothingEnabled=false;
+    ox.drawImage(MC,f.ox,f.oy,pw*f.sx,ph*f.sy);
+    ox.imageSmoothingEnabled=true;
+  }
+
+  // side guides
+  const cx = f.ox + (zone? zone.x*f.sx : (pw/2)*f.sx);
+  const band = cfg.straight*pw*f.sx;
+  ox.save();
+  ox.strokeStyle='#E8EFEE55'; ox.lineWidth=1; ox.setLineDash([6,8]);
+  ox.beginPath(); ox.moveTo(cx,f.oy); ox.lineTo(cx,f.oy+ph*f.sy); ox.stroke();
+  ox.setLineDash([]); ox.fillStyle='#E8EFEE14';
+  ox.fillRect(cx-band,f.oy,band*2,ph*f.sy);
+  const offLeft = (cfg.hand==='R')!==cfg.mirror;
+  ox.font='600 10px system-ui'; ox.letterSpacing='2px';
+  ox.fillStyle=offLeft?'#3FD0C9':'#FFB03A'; ox.textAlign='right'; ox.fillText(offLeft?'OFF':'LEG',cx-band-8,f.oy+16);
+  ox.fillStyle=offLeft?'#FFB03A':'#3FD0C9'; ox.textAlign='left';  ox.fillText(offLeft?'LEG':'OFF',cx+band+8,f.oy+16);
+  ox.restore();
+
+  if(zone&&cfg.useZone){
+    const [zx,zy]=toScreen(zone.x,zone.y);
+    ox.strokeStyle='#E8EFEE66'; ox.lineWidth=1;
+    ox.beginPath(); ox.arc(zx,zy,Math.max(14,pw*0.06*f.sx),0,7); ox.stroke();
+  }
+
+  // trail
+  const drawPath=(arr,col,wid)=>{
+    if(arr.length<2) return;
+    ox.strokeStyle=col; ox.lineWidth=wid; ox.lineJoin='round'; ox.beginPath();
+    arr.forEach((p,i)=>{const[a,b]=toScreen(p.x,p.y); i?ox.lineTo(a,b):ox.moveTo(a,b);});
+    ox.stroke();
   };
-  const modes = (key, label) => {
-    if (!caps[key] || !caps[key].length) return '';
-    return '<div style="margin-bottom:16px"><label class="f" for="c_'+key+'">'+label+'</label><select id="c_'+key+'">'+
-      caps[key].map(m => '<option value="'+m+'"'+(s[key]===m?' selected':'')+'>'+m+'</option>').join('') + '</select></div>';
-  };
+  drawPath(track,'#3FD0C9',2);
+  drawPath(post,'#FFB03A',3);
 
-  out.push(range('zoom','Zoom','×', v => (+v).toFixed(2)));
-  out.push(modes('focusMode','Focus mode'));
-  out.push(range('focusDistance','Focus distance',''));
-  out.push(modes('exposureMode','Exposure mode'));
-  out.push(range('exposureTime','Exposure time',''));
-  out.push(range('exposureCompensation','Exposure compensation',''));
-  out.push(range('iso','ISO',''));
-  out.push(modes('whiteBalanceMode','White balance mode'));
-  out.push(range('colorTemperature','Colour temperature',' K'));
-
-  const support = ['zoom','focusMode','focusDistance','exposureMode','exposureTime','iso','whiteBalanceMode','torch']
-    .map(k => '<span class="pill '+(caps[k]?'y':'n')+'">'+k+' '+(caps[k]?'✓':'✗')+'</span>').join(' ');
-
-  const html = out.filter(Boolean).join('');
-  $('ctrls').innerHTML = '<div style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap">'+support+'</div>' +
-    (html || '<div class="msg bad">This camera exposes no manual controls. Fix your lighting instead — a constant, bright, artificial scene keeps auto-exposure from hunting.</div>');
-
-  ['zoom','focusDistance','exposureTime','exposureCompensation','iso','colorTemperature'].forEach(key => {
-    const el = $('c_'+key); if (!el) return;
-    el.oninput = async () => {
-      try {
-        await track.applyConstraints({ advanced: [ { [key]: Number(el.value) } ] });
-        const lab = el.previousElementSibling.querySelector('span');
-        if (lab) lab.textContent = key === 'zoom' ? (+el.value).toFixed(2) : el.value;
-      } catch(e){ msg('streamMsg','Could not set ' + key + ': ' + e.message, 'warn'); }
-    };
-  });
-  ['focusMode','exposureMode','whiteBalanceMode'].forEach(key => {
-    const el = $('c_'+key); if (!el) return;
-    el.onchange = async () => {
-      try { await track.applyConstraints({ advanced: [ { [key]: el.value } ] }); renderCaps(); }
-      catch(e){ msg('streamMsg','Could not set ' + key + ': ' + e.message, 'warn'); }
-    };
-  });
+  const head=post.length?post[post.length-1]:(track.length?track[track.length-1]:null);
+  if(head){
+    const[a,b]=toScreen(head.x,head.y);
+    ox.strokeStyle='#E2453A'; ox.lineWidth=2;
+    ox.beginPath(); ox.arc(a,b,Math.max(8,Math.sqrt(head.area)*f.sx),0,7); ox.stroke();
+  }
+  if(contactPt&&(phase==='contact'||performance.now()-contactT<1500)){
+    const[a,b]=toScreen(contactPt.x,contactPt.y);
+    ox.strokeStyle='#E8EFEE'; ox.lineWidth=2;
+    ox.beginPath(); ox.moveTo(a-10,b-10); ox.lineTo(a+10,b+10); ox.moveTo(a+10,b-10); ox.lineTo(a-10,b+10); ox.stroke();
+  }
+  if(shake){ ox.fillStyle='#E2453A'; ox.font='600 11px system-ui'; ox.fillText('whole frame moving — hold the phone still',12,H-12); }
 }
 
-/* ---------- 06 capability dump ---------- */
-
-function renderCaps(){
-  const caps = safeCaps(), s = track.getSettings();
-  const keys = [...new Set([...Object.keys(caps), ...Object.keys(s)])].sort();
-  const fmt = v => v == null ? '—' : (typeof v === 'object' ? (Array.isArray(v) ? v.join(', ') : JSON.stringify(v)) : String(v));
-  $('capTbl').querySelector('tbody').innerHTML = keys.map(k =>
-    '<tr><td>'+k+'</td><td class="val">'+fmt(caps[k])+'</td><td>'+fmt(s[k])+'</td></tr>').join('');
-  results.sessions[results.sessions.length-1] &&
-    Object.assign(results.sessions[results.sessions.length-1], { capabilities: caps, settings: s });
+function paintState(){
+  const s=$('pState');
+  s.textContent=phase; s.className='pill'+(phase==='tracking'?' live':phase==='contact'?' hot':'');
+  $('pFps').textContent=Math.round(fps)+' fps';
+  $('pBlob').textContent=blobCount+' blobs';
 }
 
-/* ---------- 07 export ---------- */
+/* ---------------- log + wagon wheel ---------------- */
+function renderLog(){
+  const box=$('log');
+  if(!shots.length){ box.innerHTML='<div class="empty">Nothing tracked yet.</div>'; return; }
+  box.innerHTML=shots.map((s,i)=>{
+    const w=Math.min(48,Math.abs(s.drift)*180);
+    const left=s.drift<0? 50-w : 50;
+    return `<div class="entry">
+      <span class="n mono">${String(shots.length-i).padStart(2,'0')}</span>
+      <span class="bar"><i></i><u style="left:${left}%;width:${w}%;background:${s.colour}"></u></span>
+      <span class="tag" style="color:${s.colour}">${s.side.split(' ')[0]} <span class="mono" style="color:var(--dim)">${s.conf}%</span></span>
+    </div>`;
+  }).join('');
+  $('sOff').textContent=shots.filter(s=>s.side==='OFF SIDE').length;
+  $('sLeg').textContent=shots.filter(s=>s.side==='LEG SIDE').length;
+  $('sStr').textContent=shots.filter(s=>s.side==='STRAIGHT').length;
+}
 
-function payload(){ return JSON.stringify(results, null, 2); }
+function renderWheel(){
+  const c=$('wheel'), g=c.getContext('2d'), W=c.width, H=c.height;
+  g.clearRect(0,0,W,H);
+  const cx=W/2, cy=H-10, R=H-24;
+  g.strokeStyle='#1E333D'; g.lineWidth=2;
+  g.beginPath(); g.arc(cx,cy,R,Math.PI,0); g.stroke();
+  g.beginPath(); g.moveTo(cx-R,cy); g.lineTo(cx+R,cy); g.stroke();
+  g.setLineDash([3,5]); g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx,cy-R); g.stroke(); g.setLineDash([]);
+  shots.forEach((s,i)=>{
+    const a=Math.PI/2 + Math.max(-1.35,Math.min(1.35, s.drift*6));
+    const r=R*(0.45+0.5*Math.min(1,s.conf/100));
+    const x=cx+Math.sin(a-Math.PI/2)*r*-1, y=cy-Math.cos(a-Math.PI/2)*r*-1;
+    const X=cx + Math.cos(Math.PI - a)*r*-1, Y=cy - Math.sin(a)*r;
+    g.globalAlpha=Math.max(.25,1-i*0.06);
+    g.strokeStyle=s.colour==='var(--off)'?'#3FD0C9':s.colour==='var(--leg)'?'#FFB03A':'#C9D6D3';
+    g.lineWidth=1.5; g.beginPath(); g.moveTo(cx,cy); g.lineTo(X,Y); g.stroke();
+    g.fillStyle=g.strokeStyle; g.beginPath(); g.arc(X,Y,2.5,0,7); g.fill();
+  });
+  g.globalAlpha=1;
+}
 
-$('btnSave').onclick = () => {
-  const blob = new Blob([payload()], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'camera-probe-' + Date.now() + '.json';
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  msg('saveMsg','Saved.','ok');
+/* ---------------- demo (no camera needed) ---------------- */
+function demo(){
+  const side=Math.random()<0.45?-1:(Math.random()<0.7?1:0);
+  pw=pw||288; ph=ph||162;
+  const cp={x:pw/2,y:ph*0.45}, pts=[]; const t0=performance.now();
+  for(let i=0;i<8;i++) pts.push({
+    x:cp.x+side*i*pw*0.022+(Math.random()-0.5)*1.2,
+    y:cp.y+i*ph*0.012, t:t0+i*22, area:6+i});
+  contactPt=cp; classify(pts,cp);
+  hint('Demo shot injected — the real read uses the same maths on the camera track.');
+}
+
+/* ---------------- wiring ---------------- */
+function hint(msg){ $('hint').textContent=msg; }
+const bind=(id,key,fmt,scale)=>{
+  const s=$(id), v=$('v'+id.slice(1));
+  const upd=()=>{ cfg[key]=scale?scale(+s.value):+s.value; v.textContent=fmt?fmt(s.value):s.value; };
+  s.addEventListener('input',upd); upd();
 };
+bind('sDiff','diff'); bind('sMin','minA'); bind('sMax','maxA'); bind('sJolt','jolt');
+bind('sWin','win');
+bind('sStraight','straight',x=>x+'%',x=>x/100);
+bind('sHue','hueW');
+bind('sSat','sat',x=>x+'%',x=>x/100);
+bind('sVal','val',x=>x+'%',x=>x/100);
+$('ballCol').addEventListener('change',e=>{ cfg.hue=+e.target.value; updateSwatch(); });
+$('mode').addEventListener('change',e=>cfg.mode=e.target.value);
+$('btnSample').addEventListener('click',e=>{
+  sampling=!sampling; e.currentTarget.setAttribute('aria-pressed',sampling);
+  hint(sampling? 'Hold the ball still in front of the camera and tap it.'
+               : 'Sampling cancelled.');
+});
+bind('sRes','procW',x=>x,x=>{ prevGray=null; return x; });
 
-$('btnCopy').onclick = async () => {
-  try { await navigator.clipboard.writeText(payload()); msg('saveMsg','Copied.','ok'); }
-  catch(e){ msg('saveMsg','Clipboard blocked. Use Download instead.','bad'); }
-};
+const toggle=(id,fn)=>$(id).addEventListener('click',e=>{
+  const on=e.currentTarget.getAttribute('aria-pressed')!=='true';
+  e.currentTarget.setAttribute('aria-pressed',on); fn(on);
+});
+toggle('btnMask',on=>cfg.showMask=on);
+toggle('btnZone',on=>cfg.useZone=on);
+toggle('btnAudio',on=>cfg.useAudio=on);
+toggle('btnSwap',on=>{cfg.mirror=on;});
+$('hand').addEventListener('change',e=>cfg.hand=e.target.value);
+$('btnCam').addEventListener('click',startCam);
+$('btnMic').addEventListener('click',startMic);
+$('btnDemo').addEventListener('click',demo);
+$('btnClear').addEventListener('click',()=>{shots=[];renderLog();renderWheel();});
+$('btnArm').addEventListener('click',()=>{
+  phase='armed'; track=[]; post=[]; contactPt=null; onsets=[]; releaseT=0;
+  $('verdict').classList.remove('show'); hint('Armed. Feed the next ball.');
+});
 
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+OV.addEventListener('pointerdown',e=>{
+  if(!pw) return;
+  const r=OV.getBoundingClientRect(), f=fitBox();
+  const x=(e.clientX-r.left-f.ox)/f.sx, y=(e.clientY-r.top-f.oy)/f.sy;
+  if(x<0||y<0||x>pw||y>ph) return;
+  if(sampling){ sampleColour(x,y); return; }
+  zone={x,y}; hint('Contact zone set. Off/leg is measured from this line.');
+});
+window.addEventListener('resize',()=>{ OV.width=0; sizeUp(); });
+updateSwatch(); renderWheel(); renderLog(); paintState();
 </script>
 </body>
 </html>
