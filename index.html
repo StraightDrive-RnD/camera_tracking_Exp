@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Camera probe — ball tracker bring-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F6F1;
+  --grid:#E4E2D8;
+  --grid-major:#D6D3C6;
+  --ink:#1C1B18;
+  --muted:#6F6D64;
+  --rule:#CBC8BB;
+  --ic:#F2C230;
+  --ok:#2E7D5B;
+  --warn:#C77A16;
+  --bad:#C4452D;
+  --net:#2B5FA8;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--disp);
+  color:var(--ink);
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(var(--grid-major) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-major) 1px,transparent 1px);
+  background-size:8px 8px,8px 8px,40px 40px,40px 40px;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 64px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header{padding:28px 0 20px;border-bottom:2px solid var(--ink);margin-bottom:24px}
+h1{font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-0.02em}
+.sub{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;background:var(--ic);border:1px solid var(--ink);padding:1px 7px;font-family:var(--mono);font-size:11px;font-weight:500;margin-right:6px}
+section{background:rgba(255,255,255,.72);border:1px solid var(--rule);padding:16px;margin-bottom:16px}
+h2{font-size:11px;font-family:var(--mono);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2 .idx{color:var(--muted);font-weight:400}
+p.note{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 14px}
+button{font-family:var(--disp);font-size:14px;font-weight:500;padding:10px 16px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;border-radius:0}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.primary{background:var(--ic)}
+button:focus-visible{outline:2px solid var(--net);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+label.f{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+select,input[type=number]{font-family:var(--mono);font-size:13px;padding:8px;border:1px solid var(--rule);background:#fff;color:var(--ink);width:100%;border-radius:0}
+input[type=range]{width:100%;accent-color:var(--net)}
+.field{flex:1 1 150px;min-width:130px;margin-bottom:10px}
+video{width:100%;background:#111;display:block;border:1px solid var(--ink)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.stat{background:#fff;padding:10px 12px}
+.stat .k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+.stat .v{font-family:var(--mono);font-size:19px;font-weight:700;line-height:1.1}
+.stat .u{font-size:11px;font-weight:400;color:var(--muted)}
+.v.ok{color:var(--ok)} .v.warn{color:var(--warn)} .v.bad{color:var(--bad)}
+canvas.trace{width:100%;height:110px;display:block;border:1px solid var(--rule);background:#fff}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+td.val{word-break:break-word;color:var(--net)}
+.scroll{max-height:280px;overflow:auto;border:1px solid var(--rule)}
+.msg{font-family:var(--mono);font-size:12px;padding:9px 11px;border-left:3px solid var(--muted);background:#fff;margin-bottom:10px;line-height:1.5}
+.msg.bad{border-color:var(--bad);color:var(--bad)}
+.msg.ok{border-color:var(--ok);color:var(--ok)}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
+.pill.y{color:var(--ok)} .pill.n{color:var(--bad)}
+.legend{font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;gap:14px;margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:-1px}
+.hidden{display:none}
+footer{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding-top:24px;line-height:1.7}
+@media (prefers-reduced-motion:no-preference){section{animation:in .3s ease both}}
+@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Camera probe</h1>
+  <div class="sub"><span class="tag">STEP 1</span>Ball tracker bring-up · measures what this phone actually delivers</div>
+</header>
+
+<section>
+  <h2><span>Camera access</span><span class="idx">01</span></h2>
+  <p class="note">Device names stay hidden until permission is granted. Serve this over HTTPS or the camera will not open at all.</p>
+  <div class="row">
+    <button class="primary" id="btnGrant">Grant camera access</button>
+    <button id="btnRefresh" disabled>Refresh list</button>
+  </div>
+  <div id="grantMsg"></div>
+  <div id="devWrap" class="hidden">
+    <label class="f" for="devSel">Camera</label>
+    <select id="devSel"></select>
+    <p class="note" style="margin:10px 0 0">On most phones the telephoto module appears as a separate entry. If it does not, use the zoom control in section 05 instead.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span>Open stream</span><span class="idx">02</span></h2>
+  <div class="row">
+    <div class="field">
+      <label class="f" for="resSel">Resolution</label>
+      <select id="resSel">
+        <option value="640x480">640 × 480</option>
+        <option value="1280x720" selected>1280 × 720</option>
+        <option value="1920x1080">1920 × 1080</option>
+        <option value="2560x1440">2560 × 1440</option>
+        <option value="3840x2160">3840 × 2160</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="f" for="fpsSel">Frame rate request</label>
+      <select id="fpsSel">
+        <option value="30">30</option>
+        <option value="60" selected>60</option>
+        <option value="120">120</option>
+        <option value="240">240</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <button class="primary" id="btnStart" disabled>Start stream</button>
+    <button id="btnStop" disabled>Stop</button>
+  </div>
+  <div id="streamMsg"></div>
+  <video id="vid" playsinline muted autoplay></video>
+  <div id="actual" class="stat-grid hidden" style="margin-top:12px"></div>
+</section>
+
+<section>
+  <h2><span>Measured frame rate</span><span class="idx">03</span></h2>
+  <p class="note">The reported setting and the delivered rate often disagree. This counts real frames through requestVideoFrameCallback and uses capture timestamps, not wall clock.</p>
+  <div class="row">
+    <button class="primary" id="btnFps" disabled>Run 300-frame test</button>
+    <button id="btnSweep" disabled>Sweep all modes</button>
+  </div>
+  <div id="fpsMsg"></div>
+  <div id="fpsStats" class="stat-grid hidden"></div>
+  <canvas class="trace" id="trace" width="700" height="110"></canvas>
+  <div class="legend">
+    <span><i style="background:var(--ok)"></i>frame interval</span>
+    <span><i style="background:var(--bad)"></i>late / dropped</span>
+    <span><i style="background:var(--net)"></i>nominal</span>
+  </div>
+  <div id="sweepWrap" class="hidden" style="margin-top:14px">
+    <div class="scroll"><table id="sweepTbl"><thead><tr><th>Requested</th><th>Got</th><th>Measured fps</th><th>Jitter</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<section>
+  <h2><span>Processing budget</span><span class="idx">04</span></h2>
+  <p class="note">Runs the real pipeline — downscale, grayscale, frame difference, threshold, connected components — and reports cost per frame. This must sit well under one frame interval or the detector will fall behind.</p>
+  <div class="row">
+    <div class="field">
+      <label class="f" for="procSel">Processing size</label>
+      <select id="procSel">
+        <option value="320x180">320 × 180</option>
+        <option value="480x270" selected>480 × 270</option>
+        <option value="640x360">640 × 360</option>
+        <option value="960x540">960 × 540</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="f" for="thrIn">Diff threshold</label>
+      <input type="number" id="thrIn" value="24" min="1" max="255">
+    </div>
+  </div>
+  <div class="row"><button class="primary" id="btnBench" disabled>Run 120-frame benchmark</button></div>
+  <div id="benchMsg"></div>
+  <div id="benchStats" class="stat-grid hidden"></div>
+</section>
+
+<section>
+  <h2><span>Manual controls</span><span class="idx">05</span></h2>
+  <p class="note">Autofocus hunting between the near ball and the far net will blur exactly the frames you need. Lock what this phone lets you lock.</p>
+  <div id="ctrls"><div class="msg">Start a stream to see which controls this camera exposes.</div></div>
+</section>
+
+<section>
+  <h2><span>Full capability dump</span><span class="idx">06</span></h2>
+  <div class="scroll"><table id="capTbl"><thead><tr><th style="width:38%">Key</th><th>Capability</th><th style="width:22%">Current</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section>
+  <h2><span>Export</span><span class="idx">07</span></h2>
+  <p class="note">Saves everything measured so far as JSON. Run this on each candidate phone and compare the files side by side.</p>
+  <div class="row">
+    <button class="primary" id="btnSave" disabled>Download results</button>
+    <button id="btnCopy" disabled>Copy to clipboard</button>
+  </div>
+  <div id="saveMsg"></div>
+</section>
+
+<footer>
+  Ball tracker bring-up · step 1 of 7<br>
+  Next: frame recorder with ring buffer
+</footer>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const vid = $('vid');
+let stream = null, track = null, wakeLock = null;
+const results = { userAgent: navigator.userAgent, probedAt: new Date().toISOString(), devices: [], sessions: [], sweep: [], benchmarks: [] };
+
+function msg(el, text, kind){ $(el).innerHTML = '<div class="msg ' + (kind||'') + '">' + text + '</div>'; }
+function clear(el){ $(el).innerHTML = ''; }
+function stat(k, v, u, cls){ return '<div class="stat"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+(u?' <span class="u">'+u+'</span>':'')+'</div></div>'; }
+
+async function keepAwake(){
+  try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+}
+
+/* ---------- 01 devices ---------- */
+
+$('btnGrant').onclick = async () => {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: true });
+    s.getTracks().forEach(t => t.stop());
+    clear('grantMsg');
+    await listDevices();
+    $('devWrap').classList.remove('hidden');
+    $('btnRefresh').disabled = false;
+    $('btnStart').disabled = false;
+    keepAwake();
+  } catch (e) {
+    msg('grantMsg', 'Camera did not open: ' + e.name + '. Check that this page is on HTTPS and that the browser has camera permission.', 'bad');
+  }
+};
+$('btnRefresh').onclick = listDevices;
+
+async function listDevices(){
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  results.devices = devs.map(d => ({ deviceId: d.deviceId, label: d.label, groupId: d.groupId }));
+  $('devSel').innerHTML = devs.map((d,i) => '<option value="'+d.deviceId+'">'+(d.label || ('camera '+(i+1)))+'</option>').join('');
+}
+
+/* ---------- 02 stream ---------- */
+
+async function openStream(deviceId, w, h, fps){
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      deviceId: deviceId ? { exact: deviceId } : undefined,
+      width: { ideal: w }, height: { ideal: h }, frameRate: { ideal: fps }
+    }, audio: false
+  });
+  track = stream.getVideoTracks()[0];
+  vid.srcObject = stream;
+  await vid.play().catch(()=>{});
+  return track;
+}
+
+$('btnStart').onclick = async () => {
+  const [w,h] = $('resSel').value.split('x').map(Number);
+  const fps = Number($('fpsSel').value);
+  msg('streamMsg', 'Opening…');
+  try {
+    await openStream($('devSel').value, w, h, fps);
+    clear('streamMsg');
+    showActual(w, h, fps);
+    renderCaps();
+    renderControls();
+    $('btnStop').disabled = false;
+    $('btnFps').disabled = false;
+    $('btnSweep').disabled = false;
+    $('btnBench').disabled = false;
+    $('btnSave').disabled = false;
+    $('btnCopy').disabled = false;
+    if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype))
+      msg('fpsMsg', 'This browser has no requestVideoFrameCallback. Frame timing will be unreliable — use Chrome on Android.', 'bad');
+  } catch (e) {
+    msg('streamMsg', 'Could not open that mode: ' + e.name + ' — ' + e.message, 'bad');
+  }
+};
+
+$('btnStop').onclick = () => {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = track = null; vid.srcObject = null;
+  ['btnStop','btnFps','btnSweep','btnBench'].forEach(b => $(b).disabled = true);
+};
+
+function showActual(reqW, reqH, reqFps){
+  const s = track.getSettings();
+  const match = (s.width === reqW && s.height === reqH);
+  $('actual').classList.remove('hidden');
+  $('actual').innerHTML =
+    stat('Requested', reqW+'×'+reqH, '@'+reqFps) +
+    stat('Delivered', (s.width||'?')+'×'+(s.height||'?'), '@'+(s.frameRate ? Math.round(s.frameRate) : '?'), match ? 'ok' : 'warn') +
+    stat('Facing', s.facingMode || '—') +
+    stat('Zoom', s.zoom != null ? (+s.zoom).toFixed(2) : '—', '×');
+  results.sessions.push({ requested:{w:reqW,h:reqH,fps:reqFps}, settings:s, capabilities: safeCaps() });
+}
+
+function safeCaps(){ try { return track.getCapabilities ? track.getCapabilities() : {}; } catch(e){ return {}; } }
+
+/* ---------- 03 frame rate ---------- */
+
+function measureFrames(n, onDone){
+  const times = [], intervals = [];
+  let prev = null, first = null, presentedStart = null, presentedEnd = null, count = 0, useMedia = true;
+  function cb(now, meta){
+    const t = (meta && typeof meta.mediaTime === 'number' && meta.mediaTime > 0) ? meta.mediaTime * 1000 : now;
+    if (meta && typeof meta.mediaTime === 'number' && meta.mediaTime <= 0) useMedia = false;
+    if (first === null) { first = t; presentedStart = meta ? meta.presentedFrames : null; }
+    if (prev !== null) intervals.push(t - prev);
+    prev = t; times.push(t);
+    if (meta) presentedEnd = meta.presentedFrames;
+    if (++count < n) vid.requestVideoFrameCallback(cb);
+    else onDone({ intervals, span: t - first, count, useMedia,
+                  presented: (presentedStart != null && presentedEnd != null) ? presentedEnd - presentedStart : null });
+  }
+  vid.requestVideoFrameCallback(cb);
+}
+
+function analyse(r){
+  const iv = r.intervals.slice().sort((a,b) => a-b);
+  const median = iv[Math.floor(iv.length/2)];
+  const mean = r.intervals.reduce((a,b)=>a+b,0) / r.intervals.length;
+  const p95 = iv[Math.floor(iv.length*0.95)];
+  const sd = Math.sqrt(r.intervals.reduce((a,b)=>a+(b-mean)*(b-mean),0) / r.intervals.length);
+  const fps = 1000 / median;
+  const late = r.intervals.filter(x => x > median*1.5).length;
+  return { median, mean, p95, sd, fps, late, min: iv[0], max: iv[iv.length-1],
+           dropped: r.presented != null ? Math.max(0, r.presented - r.count) : null };
+}
+
+$('btnFps').onclick = () => {
+  msg('fpsMsg','Measuring 300 frames — hold the phone still…');
+  $('btnFps').disabled = true;
+  measureFrames(300, r => {
+    $('btnFps').disabled = false;
+    const a = analyse(r);
+    clear('fpsMsg');
+    const cls = a.fps >= 55 ? 'ok' : a.fps >= 28 ? 'warn' : 'bad';
+    const jcls = a.sd < 2 ? 'ok' : a.sd < 6 ? 'warn' : 'bad';
+    $('fpsStats').classList.remove('hidden');
+    $('fpsStats').innerHTML =
+      stat('Measured', a.fps.toFixed(1), 'fps', cls) +
+      stat('Median interval', a.median.toFixed(2), 'ms') +
+      stat('Jitter (σ)', a.sd.toFixed(2), 'ms', jcls) +
+      stat('p95 interval', a.p95.toFixed(2), 'ms') +
+      stat('Late frames', a.late + ' / ' + r.intervals.length, '', a.late === 0 ? 'ok' : 'warn') +
+      stat('Dropped', a.dropped != null ? a.dropped : '—', '', a.dropped ? 'warn' : '');
+    if (!r.useMedia) msg('fpsMsg','mediaTime was not usable, so these intervals come from the display clock. Treat the jitter figure as pessimistic.','warn');
+    drawTrace(r.intervals, a.median);
+    results.sessions[results.sessions.length-1].fpsTest = a;
+  });
+};
+
+function drawTrace(intervals, nominal){
+  const c = $('trace'), ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+  const scale = H / (nominal * 3);
+  ctx.strokeStyle = '#2B5FA8'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, H - nominal*scale); ctx.lineTo(W, H - nominal*scale); ctx.stroke();
+  ctx.setLineDash([]);
+  const bw = Math.max(1, W / intervals.length);
+  intervals.forEach((v,i) => {
+    const bh = Math.min(H, v * scale);
+    ctx.fillStyle = v > nominal*1.5 ? '#C4452D' : '#2E7D5B';
+    ctx.fillRect(i*bw, H-bh, Math.max(1,bw-0.5), bh);
+  });
+}
+
+const SWEEP = [
+  [640,480,60],[640,480,120],[1280,720,30],[1280,720,60],[1280,720,120],
+  [1920,1080,30],[1920,1080,60],[2560,1440,30],[3840,2160,30]
+];
+
+$('btnSweep').onclick = async () => {
+  $('btnSweep').disabled = true; $('btnFps').disabled = true;
+  $('sweepWrap').classList.remove('hidden');
+  const tb = $('sweepTbl').querySelector('tbody'); tb.innerHTML = '';
+  results.sweep = [];
+  for (const [w,h,f] of SWEEP){
+    msg('fpsMsg','Sweeping ' + w + '×' + h + ' @ ' + f + '…');
+    let row;
+    try {
+      await openStream($('devSel').value, w, h, f);
+      await new Promise(r => setTimeout(r, 500));
+      const s = track.getSettings();
+      const r = await new Promise(res => measureFrames(90, res));
+      const a = analyse(r);
+      row = { req:[w,h,f], got:[s.width,s.height,Math.round(s.frameRate||0)], fps:+a.fps.toFixed(1), jitter:+a.sd.toFixed(2) };
+      const cls = a.fps >= 55 ? 'ok' : a.fps >= 28 ? 'warn' : 'bad';
+      tb.insertAdjacentHTML('beforeend',
+        '<tr><td>'+w+'×'+h+' @'+f+'</td><td class="val">'+s.width+'×'+s.height+' @'+Math.round(s.frameRate||0)+
+        '</td><td><span class="v '+cls+'" style="font-size:12px">'+a.fps.toFixed(1)+'</span></td><td>'+a.sd.toFixed(1)+' ms</td></tr>');
+    } catch(e){
+      row = { req:[w,h,f], error: e.name };
+      tb.insertAdjacentHTML('beforeend','<tr><td>'+w+'×'+h+' @'+f+'</td><td class="val" style="color:var(--bad)">rejected</td><td>—</td><td>—</td></tr>');
+    }
+    results.sweep.push(row);
+  }
+  clear('fpsMsg');
+  $('btnSweep').disabled = false; $('btnFps').disabled = false;
+  renderCaps(); renderControls();
+};
+
+/* ---------- 04 processing benchmark ---------- */
+
+function labelBlobs(bin, w, h, minArea){
+  const parent = [], area = [];
+  const find = x => { while (parent[x] !== x) x = parent[x] = parent[parent[x]]; return x; };
+  const union = (a,b) => { a = find(a); b = find(b); if (a !== b) { parent[b] = a; area[a] += area[b]; area[b] = 0; } };
+  let prevRuns = [], curRuns = [];
+  for (let y = 0; y < h; y++){
+    curRuns.length = 0;
+    let x = 0;
+    while (x < w){
+      if (bin[y*w+x]){
+        const s = x; while (x < w && bin[y*w+x]) x++;
+        const e = x-1, id = parent.length;
+        parent.push(id); area.push(e-s+1);
+        for (let k = 0; k < prevRuns.length; k++){ const r = prevRuns[k]; if (r.s <= e && r.e >= s) union(r.id, id); }
+        curRuns.push({ s, e, id });
+      } else x++;
+    }
+    const t = prevRuns; prevRuns = curRuns; curRuns = t;
+  }
+  let n = 0;
+  for (let i = 0; i < parent.length; i++) if (find(i) === i && area[i] >= minArea) n++;
+  return n;
+}
+
+$('btnBench').onclick = () => {
+  const [w,h] = $('procSel').value.split('x').map(Number);
+  const thr = Number($('thrIn').value);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  let prevGray = null, frames = 0, blobsTotal = 0;
+  const tDraw = [], tGray = [], tDiff = [], tBlob = [], tAll = [];
+  $('btnBench').disabled = true;
+  msg('benchMsg','Benchmarking ' + w + '×' + h + ' over 120 frames…');
+
+  function step(){
+    const t0 = performance.now();
+    ctx.drawImage(vid, 0, 0, w, h);
+    const img = ctx.getImageData(0, 0, w, h).data;
+    const t1 = performance.now();
+    const gray = new Uint8Array(w*h);
+    for (let i = 0, p = 0; i < gray.length; i++, p += 4)
+      gray[i] = (img[p]*77 + img[p+1]*150 + img[p+2]*29) >> 8;
+    const t2 = performance.now();
+    let blobs = 0;
+    if (prevGray){
+      const bin = new Uint8Array(w*h);
+      for (let i = 0; i < gray.length; i++){
+        const d = gray[i] - prevGray[i];
+        bin[i] = (d > thr || d < -thr) ? 1 : 0;
+      }
+      const t3 = performance.now();
+      blobs = labelBlobs(bin, w, h, 4);
+      const t4 = performance.now();
+      tDiff.push(t3-t2); tBlob.push(t4-t3); tAll.push(t4-t0);
+      blobsTotal += blobs; frames++;
+    }
+    tDraw.push(t1-t0); tGray.push(t2-t1);
+    prevGray = gray;
+    if (frames < 120) vid.requestVideoFrameCallback(step);
+    else finish();
+  }
+
+  function finish(){
+    const avg = a => a.reduce((x,y)=>x+y,0)/a.length;
+    const p95 = a => { const s = a.slice().sort((x,y)=>x-y); return s[Math.floor(s.length*0.95)]; };
+    const total = avg(tAll), worst = p95(tAll);
+    const budget60 = 16.67;
+    const cls = worst < budget60*0.5 ? 'ok' : worst < budget60 ? 'warn' : 'bad';
+    $('benchStats').classList.remove('hidden');
+    $('benchStats').innerHTML =
+      stat('Total / frame', total.toFixed(2), 'ms', cls) +
+      stat('p95', worst.toFixed(2), 'ms', cls) +
+      stat('Draw + read', avg(tDraw).toFixed(2), 'ms') +
+      stat('Grayscale', avg(tGray).toFixed(2), 'ms') +
+      stat('Diff', avg(tDiff).toFixed(2), 'ms') +
+      stat('Blobs', avg(tBlob).toFixed(2), 'ms') +
+      stat('Headroom @60fps', (budget60 - worst).toFixed(2), 'ms', cls) +
+      stat('Blobs / frame', (blobsTotal/frames).toFixed(1));
+    clear('benchMsg');
+    if (worst >= budget60) msg('benchMsg','Over budget at 60 fps. Drop the processing size, or move the diff to WebGL.','bad');
+    $('btnBench').disabled = false;
+    results.benchmarks.push({ size:[w,h], threshold:thr, meanMs:+total.toFixed(3), p95Ms:+worst.toFixed(3),
+      draw:+avg(tDraw).toFixed(3), gray:+avg(tGray).toFixed(3), diff:+avg(tDiff).toFixed(3), blob:+avg(tBlob).toFixed(3) });
+  }
+  vid.requestVideoFrameCallback(step);
+};
+
+/* ---------- 05 manual controls ---------- */
+
+function renderControls(){
+  const caps = safeCaps(), s = track.getSettings(), out = [];
+  const range = (key, label, unit, fmt) => {
+    if (!caps[key] || caps[key].min == null) return '';
+    const c = caps[key], cur = s[key] != null ? s[key] : c.min;
+    return '<div style="margin-bottom:16px"><label class="f" for="c_'+key+'">'+label+
+      ' <span style="color:var(--net)">'+(fmt?fmt(cur):cur)+(unit||'')+'</span>'+
+      ' <span style="float:right;text-transform:none;letter-spacing:0">'+c.min+'–'+c.max+'</span></label>'+
+      '<input type="range" id="c_'+key+'" min="'+c.min+'" max="'+c.max+'" step="'+(c.step||1)+'" value="'+cur+'"></div>';
+  };
+  const modes = (key, label) => {
+    if (!caps[key] || !caps[key].length) return '';
+    return '<div style="margin-bottom:16px"><label class="f" for="c_'+key+'">'+label+'</label><select id="c_'+key+'">'+
+      caps[key].map(m => '<option value="'+m+'"'+(s[key]===m?' selected':'')+'>'+m+'</option>').join('') + '</select></div>';
+  };
+
+  out.push(range('zoom','Zoom','×', v => (+v).toFixed(2)));
+  out.push(modes('focusMode','Focus mode'));
+  out.push(range('focusDistance','Focus distance',''));
+  out.push(modes('exposureMode','Exposure mode'));
+  out.push(range('exposureTime','Exposure time',''));
+  out.push(range('exposureCompensation','Exposure compensation',''));
+  out.push(range('iso','ISO',''));
+  out.push(modes('whiteBalanceMode','White balance mode'));
+  out.push(range('colorTemperature','Colour temperature',' K'));
+
+  const support = ['zoom','focusMode','focusDistance','exposureMode','exposureTime','iso','whiteBalanceMode','torch']
+    .map(k => '<span class="pill '+(caps[k]?'y':'n')+'">'+k+' '+(caps[k]?'✓':'✗')+'</span>').join(' ');
+
+  const html = out.filter(Boolean).join('');
+  $('ctrls').innerHTML = '<div style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap">'+support+'</div>' +
+    (html || '<div class="msg bad">This camera exposes no manual controls. Fix your lighting instead — a constant, bright, artificial scene keeps auto-exposure from hunting.</div>');
+
+  ['zoom','focusDistance','exposureTime','exposureCompensation','iso','colorTemperature'].forEach(key => {
+    const el = $('c_'+key); if (!el) return;
+    el.oninput = async () => {
+      try {
+        await track.applyConstraints({ advanced: [ { [key]: Number(el.value) } ] });
+        const lab = el.previousElementSibling.querySelector('span');
+        if (lab) lab.textContent = key === 'zoom' ? (+el.value).toFixed(2) : el.value;
+      } catch(e){ msg('streamMsg','Could not set ' + key + ': ' + e.message, 'warn'); }
+    };
+  });
+  ['focusMode','exposureMode','whiteBalanceMode'].forEach(key => {
+    const el = $('c_'+key); if (!el) return;
+    el.onchange = async () => {
+      try { await track.applyConstraints({ advanced: [ { [key]: el.value } ] }); renderCaps(); }
+      catch(e){ msg('streamMsg','Could not set ' + key + ': ' + e.message, 'warn'); }
+    };
+  });
+}
+
+/* ---------- 06 capability dump ---------- */
+
+function renderCaps(){
+  const caps = safeCaps(), s = track.getSettings();
+  const keys = [...new Set([...Object.keys(caps), ...Object.keys(s)])].sort();
+  const fmt = v => v == null ? '—' : (typeof v === 'object' ? (Array.isArray(v) ? v.join(', ') : JSON.stringify(v)) : String(v));
+  $('capTbl').querySelector('tbody').innerHTML = keys.map(k =>
+    '<tr><td>'+k+'</td><td class="val">'+fmt(caps[k])+'</td><td>'+fmt(s[k])+'</td></tr>').join('');
+  results.sessions[results.sessions.length-1] &&
+    Object.assign(results.sessions[results.sessions.length-1], { capabilities: caps, settings: s });
+}
+
+/* ---------- 07 export ---------- */
+
+function payload(){ return JSON.stringify(results, null, 2); }
+
+$('btnSave').onclick = () => {
+  const blob = new Blob([payload()], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'camera-probe-' + Date.now() + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  msg('saveMsg','Saved.','ok');
+};
+
+$('btnCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(payload()); msg('saveMsg','Copied.','ok'); }
+  catch(e){ msg('saveMsg','Clipboard blocked. Use Download instead.','bad'); }
+};
+
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+</script>
+</body>
+</html>
