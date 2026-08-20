@@ -274,8 +274,9 @@ async function openPort(m){
   const usingPolyfill = !('serial' in navigator);
   try{
     mode=m;
-    // 0x303a = Espressif USB VID, so the picker only lists the node.
-    port=await serialIface.requestPort({ filters:[{ usbVendorId:0x303a }] });
+    // No VID filter while debugging — chooser lists all USB devices so we can
+    // confirm the node enumerates at all. Re-add { usbVendorId:0x303a } once working.
+    port=await serialIface.requestPort({ filters:[] });
     await port.open({baudRate:115200});
     try{ await port.setSignals({dataTerminalReady:true,requestToSend:true}); }catch(e){}
     writer=port.writable.getWriter();
