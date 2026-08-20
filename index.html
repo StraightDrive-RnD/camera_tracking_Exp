@@ -1,747 +1,554 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0A1418">
-<title>Bowler's End — shot side tracker</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoScoring Tool</title>
 <style>
-:root{
-  --ink:#0A1418;          /* night pitch */
-  --ink2:#111F26;
-  --line:#1E333D;
-  --chalk:#E8EFEE;        /* crease paint */
-  --dim:#7C9299;
-  --off:#3FD0C9;          /* off side  */
-  --leg:#FFB03A;          /* leg side  */
-  --straight:#C9D6D3;
-  --cherry:#E2453A;       /* the ball  */
-  --ok:#7CE08A;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--ink);color:var(--chalk);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
-body{display:flex;flex-direction:column;height:100dvh}
-.mono{font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+  :root{ --bg:#0e1116;--panel:#161b22;--line:#232a34;--ink:#e6edf3;--muted:#8b949e;
+         --accent:#2f81f7;--ok:#3fb950;--warn:#d29922;--miss:#f85149;--chg:#58a6ff; }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);
+       color:var(--ink);height:100vh;display:flex;flex-direction:column}
+  header{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.3px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--miss);transition:.2s}
+  .dot.on{background:var(--ok)}
+  .status{color:var(--muted);font-size:13px}
+  .spacer{flex:1}
+  button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+         padding:8px 13px;border-radius:8px;cursor:pointer;transition:.15s}
+  button:hover:not(:disabled){border-color:var(--accent)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.danger:hover:not(:disabled){border-color:var(--miss)}
+  .ghost{background:transparent}
+  input{font:inherit;background:#0a0d12;border:1px solid var(--line);color:var(--ink);padding:8px 10px;border-radius:8px}
+  input:focus{outline:none;border-color:var(--accent)}
+  label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .hide{display:none!important}
+  main{flex:1;min-height:0;display:flex;flex-direction:column}
+  .pad{padding:16px 18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .grid3{display:grid;grid-template-columns:96px 1fr auto;gap:10px 12px;align-items:center}
 
-/* ---------- stage ---------- */
-#stage{position:relative;flex:1 1 auto;min-height:0;background:#000;overflow:hidden}
-#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
-#ov{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  /* home */
+  .home{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:24px auto;width:100%}
+  .home .card{cursor:pointer;text-align:center;padding:40px 22px}
+  .home .card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .home .big{font-size:36px;margin-bottom:10px}
+  .home h2{margin:0 0 6px;font-size:18px}.home p{margin:0;color:var(--muted);font-size:13px}
+  @media(max-width:620px){.home{grid-template-columns:1fr}}
 
-#topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:6px;padding:8px;
-  align-items:center;pointer-events:none;
-  background:linear-gradient(#000A,transparent)}
-.pill{font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;
-  border:1px solid var(--line);border-radius:99px;background:#0A1418CC;color:var(--dim)}
-.pill b{color:var(--chalk);font-weight:600}
-.pill.hot{border-color:var(--cherry);color:var(--cherry)}
-.pill.live{border-color:var(--ok);color:var(--ok)}
-#mic{width:56px;height:6px;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:#0A1418CC}
-#micfill{height:100%;width:0%;background:var(--ok);transition:width .05s linear}
+  /* scoring layout */
+  #view-scoring main, .scoring-body{flex:1;display:flex;min-height:0}
+  .stage-wrap{flex:1;display:flex;flex-direction:column;min-width:0;padding:14px 18px;gap:10px}
+  .side{width:340px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;padding:14px 18px 14px 0;gap:10px}
+  @media(max-width:840px){.scoring-body{flex-direction:column}.side{width:auto;padding:0 18px 14px}}
+  .bar{display:flex;align-items:center;gap:10px}
+  .bar .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .mode{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .mode.live{color:var(--warn);border-color:var(--warn)}
+  #play.active{background:var(--warn);border-color:var(--warn);color:#1c1400}
+  #arm{background:var(--accent);border-color:var(--accent);color:#fff}
+  .ctl{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;text-transform:uppercase}
+  .ctl input{width:54px}
 
-/* verdict */
-#verdict{position:absolute;left:0;right:0;top:38%;text-align:center;pointer-events:none;
-  opacity:0;transform:scale(.94);transition:opacity .12s,transform .12s}
-#verdict.show{opacity:1;transform:scale(1)}
-#vside{font-size:clamp(34px,12vw,86px);font-weight:800;letter-spacing:-.03em;line-height:.9;
-  text-shadow:0 4px 30px #000}
-#vsub{margin-top:8px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--chalk);
-  text-shadow:0 2px 12px #000}
+  #stage{position:relative;flex:1;min-height:220px;border:1px solid var(--line);border-radius:12px;
+    background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.04) 1px,transparent 0) 0 0/22px 22px,#0a0d12;overflow:hidden;touch-action:none}
+  #cage{position:absolute;left:25%;top:19%;width:50%;height:62%;border:2px solid #30506e;border-radius:6px;
+    background:repeating-linear-gradient(45deg,transparent 0 10px,rgba(47,129,247,.05) 10px 11px),repeating-linear-gradient(-45deg,transparent 0 10px,rgba(47,129,247,.05) 10px 11px)}
+  #cage.miss{animation:cageMiss .4s ease 3}
+  @keyframes cageMiss{50%{border-color:var(--miss);box-shadow:0 0 24px rgba(248,81,73,.25) inset}}
+  .cage-tag{position:absolute;top:6px;left:8px;font-size:10px;letter-spacing:2px;color:#48708f;font-weight:700}
+  .sensor{position:absolute;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:2px solid var(--line);color:var(--ink);font-weight:700;font-size:15px;cursor:grab;user-select:none;
+    transition:background .15s,border-color .15s,color .15s,box-shadow .15s;z-index:2}
+  .sensor.dragging{cursor:grabbing;z-index:5;border-color:var(--accent)}
+  #stage.locked .sensor{cursor:default}
+  .sensor .peak{position:absolute;top:calc(100% + 22px);left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;display:none}
+  .sensor .score{position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);background:#0a0d12;cursor:pointer;white-space:nowrap;min-width:22px;text-align:center;z-index:3}
+  .sensor .score:hover{border-color:var(--accent);color:var(--ink)}
+  .sensor .score.set{color:#e6b95c;border-style:solid;border-color:#e6b95c}
+  .sensor .score .ph{opacity:.45;font-weight:600}
+  .sensor .score-edit{font:inherit;font-weight:700;width:58px;text-align:center;background:#0a0d12;border:1px solid var(--accent);color:var(--ink);border-radius:6px;padding:1px 3px}
+  .sensor .score-edit:focus{outline:none}
+  .sensor.has-peak .peak{display:block}
+  .sensor.spur{animation:spur .4s ease 2}
+  @keyframes spur{50%{border-color:var(--warn);box-shadow:0 0 0 8px rgba(210,153,34,.28)}}
+  .sensor.won{background:var(--ok);border-color:var(--ok);color:#04140a}.sensor.won .peak{color:var(--ok)}
+  .sensor.blink{animation:winblink .5s ease-in-out 6}
+  @keyframes winblink{50%{box-shadow:0 0 0 12px rgba(63,185,80,.35)}}
+  #result{font-size:13px;color:var(--muted);min-height:20px}
+  #result.l-result{color:var(--ok);font-weight:600}#result.l-miss{color:var(--miss);font-weight:600}#result.l-armed{color:var(--accent)}
 
-#hint{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;font-size:12px;
-  color:var(--dim);text-shadow:0 2px 8px #000;pointer-events:none}
+  /* node/battery panel */
+  #nodesList{display:flex;flex-direction:column;gap:5px;overflow-y:auto}
+  .nrow{display:flex;align-items:center;gap:8px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12.5px}
+  .nrow.missing{opacity:.5}
+  .nid{font-weight:700;min-width:56px}
+  .badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;border:1px solid var(--line)}
+  .badge.good{color:var(--ok);border-color:var(--ok)}.badge.low{color:var(--warn);border-color:var(--warn)}
+  .badge.crit{color:var(--miss);border-color:var(--miss)}.badge.chg{color:var(--chg);border-color:var(--chg)}.badge.unk{color:var(--muted)}
+  .nrow .age{margin-left:auto;color:var(--muted);font-size:11px}
 
-/* ---------- panel ---------- */
-#panel{flex:0 0 auto;background:var(--ink);border-top:1px solid var(--line);
-  max-height:52dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.row{display:flex;gap:8px;padding:10px;align-items:center;flex-wrap:wrap}
-button{font:inherit;font-size:13px;font-weight:600;color:var(--chalk);background:var(--ink2);
-  border:1px solid var(--line);border-radius:10px;padding:11px 14px;min-height:44px}
-button:active{transform:translateY(1px)}
-button.primary{background:var(--cherry);border-color:var(--cherry);color:#150404}
-button.ghost{background:transparent}
-button[aria-pressed="true"]{border-color:var(--off);color:var(--off)}
-button:focus-visible{outline:2px solid var(--off);outline-offset:2px}
-.grow{flex:1 1 120px}
-#swatch{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
-  background:hsl(52 95% 55%);align-self:center;flex:0 0 auto}
+  #log{flex:1;min-height:120px;overflow-y:auto;background:#0a0d12;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    font-family:"SF Mono",Consolas,monospace;font-size:12px;white-space:pre-wrap;word-break:break-word}
+  .ln{padding:1px 0}.t{color:#5b6673;margin-right:8px}
+  .l-result{color:var(--ok);font-weight:600}.l-miss{color:var(--miss);font-weight:600}.l-armed{color:var(--accent)}.l-warn{color:var(--warn)}.l-sys{color:var(--muted)}.tx{color:var(--warn)}.rxok{color:var(--ok)}.rxerr{color:var(--miss)}
 
-.sec{border-top:1px solid var(--line);padding:10px}
-.sec h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.ctl{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
-.ctl label{flex:0 0 116px;color:var(--dim);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
-.ctl input[type=range]{flex:1;accent-color:var(--off);height:28px}
-.ctl .val{flex:0 0 48px;text-align:right;font-size:12px;color:var(--chalk)}
-select{font:inherit;font-size:13px;background:var(--ink2);color:var(--chalk);border:1px solid var(--line);
-  border-radius:10px;padding:10px;min-height:44px}
-
-/* wagon wheel */
-#wheelWrap{display:flex;gap:12px;align-items:center;padding:10px}
-#wheel{width:150px;height:82px;flex:0 0 auto}
-#wstats{font-size:12px;color:var(--dim);line-height:1.7}
-#wstats b{color:var(--chalk);font-weight:600}
-
-/* log */
-#log{padding:0 10px 14px}
-.entry{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
-  padding:9px 0;border-top:1px solid var(--line);font-size:13px}
-.entry .n{color:var(--dim);font-size:11px}
-.bar{position:relative;height:8px;background:#0F1D24;border-radius:99px;overflow:hidden}
-.bar i{position:absolute;top:0;bottom:0;width:2px;background:var(--dim);left:50%}
-.bar u{position:absolute;top:0;bottom:0;border-radius:99px}
-.tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
-.empty{color:var(--dim);font-size:12px;padding:14px 0;text-align:center}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  /* settings drawer */
+  #settings{position:fixed;top:0;right:0;height:100vh;width:340px;max-width:88vw;background:var(--panel);border-left:1px solid var(--line);
+    padding:20px;transform:translateX(100%);transition:.2s;z-index:20;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+  #settings.open{transform:translateX(0)}
+  #settings h3{margin:0;font-size:15px}
+  .setrow{display:flex;flex-direction:column;gap:6px}
+  .setrow .row{gap:8px}
+  .toggle{display:flex;align-items:center;gap:8px}
+  .cfgline{color:var(--muted);font-size:12px;font-family:monospace}
+  .verify{font-weight:700;padding:9px 11px;border-radius:8px;border:1px solid var(--line);font-size:12.5px}
+  .verify.ok{color:var(--ok);border-color:var(--ok)}.verify.bad{color:var(--miss);border-color:var(--miss)}
+  .macbox{font-family:monospace;font-size:19px;font-weight:700;letter-spacing:1px;color:var(--ok);background:#0a0d12;border:1px solid var(--line);border-radius:10px;padding:15px;text-align:center;user-select:all}
+  .subtabs{display:flex;gap:8px;margin-bottom:16px}
+  .subtabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hint{color:var(--muted);font-size:12px}
+  code{background:var(--panel);padding:1px 5px;border-radius:4px}
 </style>
+
+<!-- Web Serial API polyfill over WebUSB — lets this tool run on Android Chrome,
+     which supports WebUSB but not (reliably) native Web Serial for USB devices.
+     On desktop, native navigator.serial is used and this is ignored. -->
+<script type="module">
+  try{
+    const { serial } = await import('https://esm.sh/web-serial-polyfill@1.0.15');
+    window.__polyfillSerial = serial;
+  }catch(e){ console.warn('serial polyfill load failed:', e); }
+</script>
 </head>
 <body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>AutoScoring · Tool</h1>
+  <span class="status" id="status">disconnected</span>
+  <div class="spacer"></div>
+  <button class="ghost hide" id="home-btn">← Home</button>
+</header>
 
-<div id="stage">
-  <video id="vid" playsinline muted autoplay></video>
-  <canvas id="ov"></canvas>
-
-  <div id="topbar">
-    <span class="pill" id="pState">idle</span>
-    <span class="pill mono" id="pFps">– fps</span>
-    <span class="pill mono" id="pBlob">0 blobs</span>
-    <div id="mic"><div id="micfill"></div></div>
+<!-- ================= HOME ================= -->
+<main id="view-home" class="pad">
+  <div class="home">
+    <div class="card" id="pick-scoring">
+      <div class="big">🏏</div><h2>Scoring</h2>
+      <p>Connect to the master. Arm deliveries, watch hits, tune channel / wait / roster.</p>
+    </div>
+    <div class="card" id="pick-prov">
+      <div class="big">🔧</div><h2>Provisioning</h2>
+      <p>Read the master MAC, and set node ID / MAC / channel over USB.</p>
+    </div>
   </div>
+</main>
 
-  <div id="verdict"><div id="vside">—</div><div id="vsub"></div></div>
-  <div id="hint">Start the camera, then tap the video where the batsman stands.</div>
+<!-- ================= SCORING ================= -->
+<main id="view-scoring" class="hide">
+  <div class="bar pad" style="padding-bottom:0">
+    <button id="s-connect" class="primary">Connect master</button>
+    <label class="ctl">Sensors <input id="count" type="number" min="0" max="16" value="4"></label>
+    <button id="play" disabled>▶ Play</button>
+    <button id="arm" disabled>● Ball Released</button>
+    <div class="spacer"></div>
+    <span class="mode" id="s-mode">setup</span>
+    <button class="ghost" id="reset">Reset</button>
+    <button class="ghost" id="gear" disabled>⚙ Settings</button>
+  </div>
+  <div class="scoring-body">
+    <section class="stage-wrap">
+      <div class="bar"><span class="label">Batting cage — drag sensors to your layout</span></div>
+      <div id="stage"><div id="cage"><span class="cage-tag">CAGE</span></div></div>
+      <div class="hint" id="result">—</div>
+    </section>
+    <aside class="side">
+      <div class="bar"><span class="label">Nodes / battery</span></div>
+      <div id="nodesList"></div>
+      <div class="hint" id="nodesFoot">Connect to see nodes…</div>
+      <div class="bar"><span class="label">Serial</span><div class="spacer"></div><button class="ghost" id="clear">Clear</button></div>
+      <div id="log"></div>
+    </aside>
+  </div>
+</main>
+
+<!-- settings drawer -->
+<div id="settings">
+  <div class="row"><h3>Master settings</h3><div class="spacer"></div><button class="ghost" id="gear-close">✕</button></div>
+  <div class="cfgline" id="cfgline">cfg: —</div>
+  <div class="setrow"><label>ESP-NOW channel (1–13)</label>
+    <div class="row"><input id="set-ch" type="number" min="1" max="13" style="width:80px"><button id="btn-ch">Set channel</button></div></div>
+  <div class="setrow"><label>Wait-for-hit window (ms, 1000–120000)</label>
+    <div class="row"><input id="set-wait" type="number" min="1000" max="120000" step="1000" style="width:110px"><button id="btn-wait">Set wait</button></div></div>
+  <div class="setrow"><label>Battery status polling</label>
+    <div class="toggle"><button id="btn-batt">Battery poll: OFF</button><span class="hint">sends GETBATT every 8s when ON</span></div></div>
+  <div class="setrow"><label>Liveness roster stream</label>
+    <div class="toggle"><button id="btn-roster">Roster: OFF</button><span class="hint">separate streaming liveness view</span></div></div>
+  <button class="ghost" id="btn-getcfg">Refresh config</button>
 </div>
 
-<div id="panel">
-  <div class="row">
-    <button id="btnCam" class="primary grow">Start camera</button>
-    <button id="btnMic" class="grow">Add mic</button>
-    <button id="btnArm" class="grow" disabled>Arm</button>
-  </div>
-  <div class="row">
-    <select id="hand">
-      <option value="R">Right-hand bat</option>
-      <option value="L">Left-hand bat</option>
-    </select>
-    <button id="btnSwap" class="ghost" aria-pressed="false">Mirror sides</button>
-    <button id="btnDemo" class="ghost">Run demo shot</button>
-    <button id="btnClear" class="ghost">Clear log</button>
+<!-- ================= PROVISIONING ================= -->
+<main id="view-prov" class="pad">
+  <div class="subtabs">
+    <button id="tab-master" class="active">Master</button>
+    <button id="tab-node">Node</button>
   </div>
 
-  <div id="wheelWrap">
-    <canvas id="wheel" width="300" height="164"></canvas>
-    <div id="wstats">
-      <div><b id="sOff">0</b> off side</div>
-      <div><b id="sStr">0</b> straight</div>
-      <div><b id="sLeg">0</b> leg side</div>
+  <!-- master -->
+  <section id="prov-master" class="card">
+    <div class="row"><button class="primary" id="pm-connect">Connect master</button>
+      <button id="pm-fetch" disabled>Fetch MAC</button><div class="spacer"></div>
+      <button class="ghost" id="pm-disc" disabled>Disconnect</button></div>
+    <div style="margin-top:16px"><label>Master MAC</label>
+      <div class="macbox" id="pm-mac">— not fetched —</div>
+      <p class="hint" id="pm-hint" style="margin-top:8px">Connect, Fetch, copy — then paste into each node.</p></div>
+  </section>
+
+  <!-- node -->
+  <section id="prov-node" class="card hide">
+    <div class="row"><button class="primary" id="pn-connect">Connect node</button>
+      <button id="pn-status" disabled>Get status</button><div class="spacer"></div>
+      <button class="ghost" id="pn-disc" disabled>Disconnect</button></div>
+    <div class="grid3" id="pn-form" style="margin-top:18px;opacity:.4;pointer-events:none">
+      <label>Node ID</label><input id="pn-id" type="number" min="1" max="16" placeholder="1–16"><button id="pn-setid">Set ID</button>
+      <label>Master MAC</label><input id="pn-mac" placeholder="AA:BB:CC:DD:EE:FF"><button id="pn-setmac">Set MAC</button>
+      <label>Channel</label><input id="pn-ch" type="number" min="1" max="13" value="1"><button id="pn-setch">Set CH</button>
     </div>
-  </div>
+    <div class="row" id="pn-actions" style="margin-top:14px;opacity:.4;pointer-events:none">
+      <button class="primary" id="pn-commit">Commit + Verify</button>
+      <button class="danger" id="pn-erase">Erase</button>
+      <div class="spacer"></div><span class="verify hide" id="pn-verify"></span></div>
+  </section>
 
-  <div class="sec">
-    <h2>Ball colour</h2>
-    <div class="row" style="padding:0 0 6px">
-      <select id="ballCol">
-        <option value="52">Yellow</option>
-        <option value="72">Fluoro yellow-green</option>
-        <option value="35">Orange / golden</option>
-        <option value="2">Red</option>
-        <option value="330">Pink</option>
-        <option value="-1">White</option>
-      </select>
-      <select id="mode">
-        <option value="both">Motion + colour</option>
-        <option value="colour">Colour only</option>
-        <option value="motion">Motion only</option>
-      </select>
-      <button id="btnSample" class="ghost" aria-pressed="false">Sample from video</button>
-      <span id="swatch" title="target colour"></span>
-    </div>
-    <div class="ctl"><label>Hue width</label><input id="sHue" type="range" min="4" max="60" value="26"><span class="val mono" id="vHue">26</span></div>
-    <div class="ctl"><label>Min saturation</label><input id="sSat" type="range" min="5" max="90" value="28"><span class="val mono" id="vSat">28%</span></div>
-    <div class="ctl"><label>Min brightness</label><input id="sVal" type="range" min="5" max="95" value="25"><span class="val mono" id="vVal">25%</span></div>
-  </div>
-
-  <div class="sec">
-    <h2>Tuning</h2>
-    <div class="ctl"><label>Pixel change</label><input id="sDiff" type="range" min="6" max="70" value="22"><span class="val mono" id="vDiff">22</span></div>
-    <div class="ctl"><label>Min ball px</label><input id="sMin" type="range" min="1" max="40" value="3"><span class="val mono" id="vMin">3</span></div>
-    <div class="ctl"><label>Max ball px</label><input id="sMax" type="range" min="20" max="1200" value="420"><span class="val mono" id="vMax">420</span></div>
-    <div class="ctl"><label>Contact jolt</label><input id="sJolt" type="range" min="10" max="120" value="42"><span class="val mono" id="vJolt">42</span></div>
-    <div class="ctl"><label>Straight band</label><input id="sStraight" type="range" min="1" max="25" value="7"><span class="val mono" id="vStraight">7%</span></div>
-    <div class="ctl"><label>Read window</label><input id="sWin" type="range" min="120" max="800" step="20" value="360"><span class="val mono" id="vWin">360</span></div>
-    <div class="ctl"><label>Detail</label><input id="sRes" type="range" min="160" max="416" step="32" value="288"><span class="val mono" id="vRes">288</span></div>
-    <div class="row" style="padding:4px 0">
-      <button id="btnMask" class="ghost" aria-pressed="false">Show motion mask</button>
-      <button id="btnZone" class="ghost" aria-pressed="true">Use contact zone</button>
-      <button id="btnAudio" class="ghost" aria-pressed="true">Sound confirms contact</button>
-    </div>
-  </div>
-
-  <div class="sec">
-    <h2>Deliveries</h2>
-    <div id="log"><div class="empty">Nothing tracked yet.</div></div>
-  </div>
-</div>
+  <div style="margin-top:14px" class="bar"><label>Serial</label><div class="spacer"></div><button class="ghost" id="pclear">Clear</button></div>
+  <div id="plog" style="margin-top:6px;height:180px;overflow-y:auto;background:#0a0d12;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:12px;white-space:pre-wrap"></div>
+</main>
 
 <script>
-"use strict";
-/* ============================================================
-   Bowler's-end shot-side tracker
-   Vision: frame differencing -> blob -> nearest-neighbour track
-   Contact: lateral jolt / direction flip / area burst (+ optional mic transient)
-   Verdict: post-contact lateral drift, mapped to off/leg by batter's hand
-   ============================================================ */
-
 const $ = id => document.getElementById(id);
-const V=$('vid'), OV=$('ov'), ox=OV.getContext('2d');
-const PC=document.createElement('canvas'), px=PC.getContext('2d',{willReadFrequently:true});
-const MC=document.createElement('canvas'), mc=MC.getContext('2d');
+const enc = new TextEncoder();
+let port, reader, writer, keepReading=false;
+let mode=null;            // 'scoring' | 'prov-master' | 'prov-node'
+let live=false, battTimer=null;
+let lastMasterMac=null;
+const waiters=[];
 
-const cfg={
-  diff:22, minA:3, maxA:420, jolt:42, straight:0.07, win:360, procW:288,
-  showMask:false, useZone:true, useAudio:true, hand:'R', mirror:false,
-  hue:52, hueW:26, sat:0.28, val:0.25, mode:'both'
-};
-let sampling=false;
+/* ---------- views ---------- */
+function show(v){
+  for(const x of ['home','scoring','prov']) $('view-'+x).classList.toggle('hide', x!==v);
+  $('home-btn').classList.toggle('hide', v==='home');
+  $('settings').classList.remove('open');
+}
+async function goHome(){ if(port) await disconnect(); mode=null; show('home'); }
 
-let stream=null, running=false, audioCtx=null, analyser=null, freq=null, micStream=null;
-let pw=0, ph=0, prevGray=null, curGray=null, mask=null, cmask=null, pers=null, labels=null, stack=null;
-let lastT=0, fps=0, blobCount=0;
+/* ---------- logging (routes to the active view's log) ---------- */
+function logBox(){ return (mode==='prov-master'||mode==='prov-node') ? $('plog') : $('log'); }
+function stamp(){ return new Date().toLocaleTimeString('en-GB',{hour12:false}); }
+function logLine(text, cls){
+  const box=logBox(); if(!box) return;
+  const at=box.scrollHeight-box.scrollTop-box.clientHeight<40;
+  const d=document.createElement('div'); d.className='ln '+(cls||'');
+  d.innerHTML=`<span class="t">${stamp()}</span>`; d.append(document.createTextNode(text));
+  box.append(d); if(at) box.scrollTop=box.scrollHeight;
+}
 
-let phase='idle';            // idle | armed | tracking | contact | cooldown
-let track=[];                // [{x,y,t,area}]
-let post=[];                 // points after contact
-let contactPt=null, contactT=0, misses=0, cooldownUntil=0;
-let zone=null;               // {x,y} in proc coords, tap-set
-let shots=[];                // log
-let flashOnset=0, micLevel=0, onsets=[], releaseT=0;
-
-/* ---------------- camera ---------------- */
-async function startCam(){
-  if(running){ stopAll(); return; }
+/* ---------- serial core ---------- */
+function setConn(on){
+  $('dot').classList.toggle('on',on);
+  $('status').textContent = on ? ('connected · '+mode) : 'disconnected';
+}
+function getSerial(){
+  // Native Web Serial on desktop; WebUSB polyfill on Android.
+  if('serial' in navigator) return navigator.serial;
+  if(window.__polyfillSerial) return window.__polyfillSerial;
+  return null;
+}
+async function openPort(m){
+  const serialIface=getSerial();
+  if(!serialIface){ logLine('No Web Serial or WebUSB available (use Chrome/Edge, or update Chrome on Android).','rxerr'); return false; }
+  const usingPolyfill = !('serial' in navigator);
   try{
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:60} },
-      audio:false
-    });
-  }catch(e){
-    hint('Camera blocked: '+e.message+'. Serve this file over https (or localhost).');
-    return;
-  }
-  V.srcObject=stream; await V.play().catch(()=>{});
-  running=true; phase='armed';
-  $('btnCam').textContent='Stop camera'; $('btnArm').disabled=false;
-  hint('Tap the video where the batsman stands to set the contact zone.');
-  sizeUp(); pump();
-  if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{});
+    mode=m;
+    // 0x303a = Espressif USB VID, so the picker only lists the node.
+    port=await serialIface.requestPort({ filters:[{ usbVendorId:0x303a }] });
+    await port.open({baudRate:115200});
+    try{ await port.setSignals({dataTerminalReady:true,requestToSend:true}); }catch(e){}
+    writer=port.writable.getWriter();
+    keepReading=true; readLoop();
+    setConn(true); logLine('— connected — ('+(usingPolyfill?'WebUSB':'Web Serial')+')','l-sys');
+    return true;
+  }catch(e){ logLine('connect failed: '+e.message,'rxerr'); return false; }
 }
-function stopAll(){
-  running=false; phase='idle';
-  if(stream) stream.getTracks().forEach(t=>t.stop());
-  stream=null; V.srcObject=null; $('btnCam').textContent='Start camera'; $('btnArm').disabled=true;
-  ox.clearRect(0,0,OV.width,OV.height); paintState();
+async function disconnect(){
+  keepReading=false; stopBattPoll();
+  try{ if(reader) await reader.cancel(); }catch(e){}
+  try{ if(writer) writer.releaseLock(); }catch(e){}
+  try{ if(port) await port.close(); }catch(e){}
+  port=writer=reader=null; setConn(false); logLine('— disconnected —','l-sys');
 }
-
-async function startMic(){
-  if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; analyser=null;
-    $('btnMic').textContent='Add mic'; $('micfill').style.width='0%'; return; }
-  try{
-    micStream=await navigator.mediaDevices.getUserMedia({audio:{
-      echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
-  }catch(e){ hint('Mic blocked: '+e.message); return; }
-  audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
-  await audioCtx.resume();
-  const src=audioCtx.createMediaStreamSource(micStream);
-  analyser=audioCtx.createAnalyser(); analyser.fftSize=1024; analyser.smoothingTimeConstant=0;
-  src.connect(analyser); freq=new Uint8Array(analyser.frequencyBinCount);
-  $('btnMic').textContent='Mic on';
-}
-
-/* size the processing + overlay canvases to the video */
-function sizeUp(){
-  const vw=V.videoWidth, vh=V.videoHeight; if(!vw) return false;
-  const w=Math.round(cfg.procW), h=Math.max(2,Math.round(w*vh/vw));
-  if(w!==pw||h!==ph){
-    pw=w; ph=h; PC.width=pw; PC.height=ph;
-    prevGray=null; curGray=new Uint8Array(pw*ph); mask=new Uint8Array(pw*ph);
-    cmask=new Uint8Array(pw*ph); pers=new Uint16Array(pw*ph);
-    labels=new Int32Array(pw*ph); stack=new Int32Array(pw*ph);
-    zone=null;
-  }
-  const r=V.getBoundingClientRect();
-  if(OV.width!==Math.round(r.width)||OV.height!==Math.round(r.height)){
-    OV.width=Math.round(r.width); OV.height=Math.round(r.height);
-  }
-  return true;
-}
-
-/* letterbox mapping: video is object-fit:contain inside the overlay */
-function fitBox(){
-  const vw=V.videoWidth||16, vh=V.videoHeight||9, W=OV.width, H=OV.height;
-  const s=Math.min(W/vw,H/vh), dw=vw*s, dh=vh*s;
-  return {ox:(W-dw)/2, oy:(H-dh)/2, sx:dw/pw, sy:dh/ph};
-}
-const toScreen=(x,y)=>{ const f=fitBox(); return [f.ox+x*f.sx, f.oy+y*f.sy]; };
-
-/* ---------------- main loop ---------------- */
-function pump(){
-  if(!running) return;
-  if(V.requestVideoFrameCallback) V.requestVideoFrameCallback(()=>{ step(); pump(); });
-  else requestAnimationFrame(()=>{ step(); pump(); });
-}
-
-function step(){
-  if(!sizeUp()) return;
-  const t=performance.now();
-  if(lastT) fps=fps*0.85+(1000/Math.max(1,t-lastT))*0.15;
-  lastT=t;
-
-  px.drawImage(V,0,0,pw,ph);
-  const d=px.getImageData(0,0,pw,ph).data;
-  const wantColour = cfg.mode!=='motion';
-
-  for(let i=0,j=0;i<curGray.length;i++,j+=4){
-    const r=d[j], g=d[j+1], b=d[j+2];
-    curGray[i]=(r*77+g*151+b*28)>>8;
-    if(wantColour){
-      const hit=colourHit(r,g,b)?1:0;
-      cmask[i]=hit;
-      pers[i]= hit? Math.min(999,pers[i]+1) : 0;   // how long this pixel has been ball-coloured
-    }
-  }
-
-  const hadPrev=!!prevGray;
-  let moved=0;
-  if(hadPrev){
-    const th=cfg.diff;
-    mask.fill(0);
-    for(let i=0;i<curGray.length;i++){
-      const a=curGray[i]-prevGray[i];
-      if(a>th||a<-th){ mask[i]=1; moved++; }
-    }
-    dilate();
-  }
-  const tmp=prevGray; prevGray=curGray; curGray=tmp||new Uint8Array(pw*ph);
-  if(!hadPrev) return;
-
-  const shake = cfg.mode!=='colour' && moved > mask.length*0.14;   // whole scene moved: ignore
-
-  // A frame difference lights up BOTH where the ball is and where it just was.
-  // ANDing with colour keeps only the real one.
-  if(cfg.mode==='colour'){ mask.set(cmask); dilate(); }
-  else if(cfg.mode==='both'){
-    for(let i=0;i<mask.length;i++) mask[i] = (mask[i] && cmask[i]) ? 1 : 0;
-    dilate();
-  }
-
-  readMic(t);
-  const blobs = shake? [] : findBlobs();
-  blobCount=blobs.length;
-  if(!shake) advance(blobs,t);
-
-  draw(shake);
-  paintState();
-}
-
-/* is this pixel the ball's colour? cheap HSV, no allocation */
-function colourHit(r,g,b){
-  const mx = r>g ? (r>b?r:b) : (g>b?g:b);
-  const mn = r<g ? (r<b?r:b) : (g<b?g:b);
-  const v = mx/255;
-  if(v < cfg.val) return false;
-  const dd = mx-mn, s = mx? dd/mx : 0;
-  if(cfg.hue < 0) return s < 0.20 && v > Math.max(cfg.val,0.62);   // white ball: bright + colourless
-  if(s < cfg.sat || dd === 0) return false;
-  let h;
-  if(mx===r) h = 60*(((g-b)/dd)%6);
-  else if(mx===g) h = 60*((b-r)/dd + 2);
-  else h = 60*((r-g)/dd + 4);
-  if(h<0) h += 360;
-  let dh = Math.abs(h - cfg.hue); if(dh>180) dh = 360-dh;
-  return dh <= cfg.hueW;
-}
-function hueRGB(h){
-  if(h<0) return [232,239,238];
-  const f=n=>{const k=(n+h/30)%12; return Math.round(255*(0.55-0.45*Math.max(-1,Math.min(Math.min(k-3,9-k),1))));};
-  return [f(0),f(8),f(4)];
-}
-function updateSwatch(){
-  $('swatch').style.background = cfg.hue<0? '#E8EFEE' : `hsl(${cfg.hue} 95% 55%)`;
-}
-/* tap a stationary ball to learn its exact colour under these lights */
-function sampleColour(cx,cy){
-  px.drawImage(V,0,0,pw,ph);
-  const R=3, x0=Math.max(0,Math.round(cx)-R), y0=Math.max(0,Math.round(cy)-R);
-  const w=Math.min(R*2+1,pw-x0), h=Math.min(R*2+1,ph-y0);
-  const d=px.getImageData(x0,y0,w,h).data;
-  let best=null, bestScore=-1;
-  for(let j=0;j<d.length;j+=4){
-    const r=d[j],g=d[j+1],b=d[j+2];
-    const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
-    const s=mx?(mx-mn)/mx:0, v=mx/255, score=s*0.7+v*0.3;
-    if(score>bestScore){ bestScore=score; best=[r,g,b,s,v]; }
-  }
-  if(!best) return;
-  const [r,g,b,s,v]=best, mx=Math.max(r,g,b), mn=Math.min(r,g,b), dd=mx-mn;
-  if(dd===0 || s<0.15){ cfg.hue=-1; }
-  else{
-    let hh; if(mx===r) hh=60*(((g-b)/dd)%6); else if(mx===g) hh=60*((b-r)/dd+2); else hh=60*((r-g)/dd+4);
-    cfg.hue = (hh+360)%360;
-    cfg.sat = Math.max(0.12, s*0.55); $('sSat').value=Math.round(cfg.sat*100); $('vSat').textContent=Math.round(cfg.sat*100)+'%';
-    cfg.val = Math.max(0.10, v*0.45); $('sVal').value=Math.round(cfg.val*100); $('vVal').textContent=Math.round(cfg.val*100)+'%';
-  }
-  updateSwatch();
-  $('ballCol').selectedIndex=-1;
-  sampling=false; $('btnSample').setAttribute('aria-pressed','false');
-  cfg.showMask=true; $('btnMask').setAttribute('aria-pressed','true');
-  hint('Colour learned. Mask is on — check the ball lights up and little else, then tap the batsman to set the zone.');
-}
-
-function dilate(){ // 1px cross dilation so motion-blur streaks join up
-  const src=mask.slice();
-  for(let y=0;y<ph;y++) for(let x=0;x<pw;x++){
-    const i=y*pw+x; if(src[i]) continue;
-    if((x>0&&src[i-1])||(x<pw-1&&src[i+1])||(y>0&&src[i-pw])||(y<ph-1&&src[i+pw])) mask[i]=1;
+async function readLoop(){
+  let buf='';
+  while(port && port.readable && keepReading){
+    reader=port.readable.getReader();
+    try{
+      const dec=new TextDecoder();
+      while(true){
+        const {value,done}=await reader.read(); if(done) break;
+        buf+=dec.decode(value,{stream:true});
+        let s,e;                                   // framed #..$ (master)
+        while((s=buf.indexOf('#'))>=0 && (e=buf.indexOf('$',s))>=0){
+          const p=buf.slice(s+1,e); buf=buf.slice(0,s)+buf.slice(e+1);
+          if(p.length) feed(p,true);
+        }
+        let nl;                                    // \n lines (node)
+        while((nl=buf.search(/[\r\n]/))>=0){
+          const l=buf.slice(0,nl); buf=buf.slice(nl+1);
+          if(l.length) feed(l,false);
+        }
+      }
+    }catch(e){ logLine('read error: '+e.message,'rxerr'); }
+    finally{ reader.releaseLock(); }
   }
 }
-
-function findBlobs(){
-  labels.fill(0);
-  const out=[]; let lab=0;
-  for(let i=0;i<mask.length;i++){
-    if(!mask[i]||labels[i]) continue;
-    lab++; if(lab>500) break;
-    let sp=0; stack[sp++]=i; labels[i]=lab;
-    let area=0,sx=0,sy=0,x0=1e9,x1=-1,y0=1e9,y1=-1,pr=0;
-    while(sp>0){
-      const p=stack[--sp], y=(p/pw)|0, x=p-y*pw;
-      area++; sx+=x; sy+=y; pr+=pers[p];
-      if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
-      for(let dy=-1;dy<=1;dy++){ const ny=y+dy; if(ny<0||ny>=ph)continue;
-        for(let dx=-1;dx<=1;dx++){ const nx=x+dx; if(nx<0||nx>=pw)continue;
-          const np=ny*pw+nx; if(mask[np]&&!labels[np]){ labels[np]=lab; stack[sp++]=np; } } }
-    }
-    if(area<cfg.minA||area>cfg.maxA) continue;
-    if(cfg.mode==='colour' && pr/area > 30) continue;   // parked yellow kit, cones, sightscreen
-    out.push({x:sx/area,y:sy/area,area,w:x1-x0+1,h:y1-y0+1});
-  }
-  return out;
+/* one command -> framed for master, line for node */
+async function sendCmd(cmd){
+  if(!writer) return;
+  const wire = (mode==='prov-node') ? (cmd+'\n') : ('#'+cmd+'$');
+  await writer.write(enc.encode(wire)); logLine('> '+wire,'tx');
 }
-
-/* ---------------- tracking ---------------- */
-function vel(a,b){ const dt=Math.max(8,b.t-a.t)/1000; return {vx:(b.x-a.x)/dt, vy:(b.y-a.y)/dt}; }
-
-function advance(blobs,t){
-  if(phase==='cooldown'){ if(t>cooldownUntil){ phase='armed'; track=[]; } else return; }
-  if(phase==='idle') return;
-
-  // pick the blob that best continues the track
-  let cand=null;
-  if(track.length>=2){
-    const a=track[track.length-2], b=track[track.length-1], v=vel(a,b);
-    const dt=(t-b.t)/1000, gx=b.x+v.vx*dt, gy=b.y+v.vy*dt;
-    const speed=Math.hypot(v.vx,v.vy)*dt;
-    const gate=Math.max(pw*0.05, speed*1.6+pw*0.03);
-    let best=Infinity;
-    for(const b2 of blobs){ const dd=Math.hypot(b2.x-gx,b2.y-gy); if(dd<gate&&dd<best){best=dd;cand=b2;} }
-  } else if(track.length===1){
-    const b=track[0]; let best=Infinity;
-    for(const b2 of blobs){ const dd=Math.hypot(b2.x-b.x,b2.y-b.y);
-      if(dd<pw*0.22&&dd>0.4&&dd<best){best=dd;cand=b2;} }
-  } else {
-    // acquire: densest small blob, preferring one near the contact zone if set
-    let best=-1;
-    for(const b of blobs){
-      const fill=b.area/Math.max(1,b.w*b.h);
-      let s=b.area*(0.5+fill);
-      if(zone&&cfg.useZone) s*= 1/(1+Math.hypot(b.x-zone.x,b.y-zone.y)/(pw*0.5));
-      if(s>best){best=s;cand=b;}
-    }
-  }
-
-  if(!cand){
-    misses++;
-    if(misses>6){
-      if(phase==='contact'&&post.length>=3) finish(t); else if(phase!=='contact'){ track=[]; if(phase==='tracking') phase='armed'; }
-      misses=0;
-    }
-    return;
-  }
-  misses=0;
-  const p={x:cand.x,y:cand.y,t,area:cand.area};
-
-  if(phase==='contact'){
-    post.push(p);
-    if(t-contactT>=cfg.win) finish(t);
-    return;
-  }
-
-  track.push(p);
-  if(track.length>90) track.shift();
-  if(phase==='armed'&&track.length>=3) phase='tracking';
-  if(phase==='tracking'&&track.length>=4) testContact(t);
-}
-
-function testContact(t){
-  const n=track.length;
-  const a=track[n-4], b=track[n-3], c=track[n-2], d=track[n-1];
-  const v1=vel(a,b), v2=vel(c,d);
-  const s1=Math.hypot(v1.vx,v1.vy), s2=Math.hypot(v2.vx,v2.vy);
-  if(s2<cfg.jolt) return;
-
-  const dot=(v1.vx*v2.vx+v1.vy*v2.vy)/Math.max(1e-3,s1*s2);
-  const turned=dot<0.5;                                  // >60° change of heading
-  const lateral=Math.abs(v2.vx)>cfg.jolt && Math.abs(v2.vx)>Math.abs(v1.vx)*2.2;
-  const burst=d.area>c.area*2.0 && d.area>cfg.minA*3;
-  const heard=cfg.useAudio && onsets.length && (t-onsets[onsets.length-1])<140 && releaseT && (t-releaseT)>200;
-
-  if(turned||lateral||burst||heard){
-    phase='contact'; contactPt={x:d.x,y:d.y}; contactT=t; post=[d];
-    if(navigator.vibrate) navigator.vibrate(12);
-  }
-}
-
-/* ---------------- verdict ---------------- */
-function finish(t){
-  const pts=post.slice();
-  phase='cooldown'; cooldownUntil=t+1200; track=[]; post=[];
-  if(pts.length<3){ hint('Contact seen but the ball was lost — raise Detail or lower Pixel change.'); return; }
-  classify(pts, contactPt||pts[0]);
-}
-
-function linFit(pts,key){ // least squares value vs time -> slope per second
-  let n=pts.length,st=0,sv=0,stt=0,stv=0,t0=pts[0].t;
-  for(const p of pts){const tt=(p.t-t0)/1000,vv=p[key];st+=tt;sv+=vv;stt+=tt*tt;stv+=tt*vv;}
-  const den=n*stt-st*st; if(Math.abs(den)<1e-9) return {m:0,b:sv/n,r2:0};
-  const m=(n*stv-st*sv)/den, b=(sv-m*st)/n;
-  let ssr=0,sst=0,mean=sv/n;
-  for(const p of pts){const tt=(p.t-t0)/1000,pr=m*tt+b;ssr+=(p[key]-pr)**2;sst+=(p[key]-mean)**2;}
-  return {m,b,r2:sst>0?Math.max(0,1-ssr/sst):0};
-}
-
-function classify(pts, cp){
-  const fx=linFit(pts,'x'), fy=linFit(pts,'y');
-  const last=pts[pts.length-1];
-  const dx=(last.x-cp.x)/pw;                  // lateral drift, fraction of frame width
-  const dy=(last.y-cp.y)/ph;
-  const vxn=fx.m/pw;                          // frame widths per second
-  const screen = (dx*0.6 + vxn*0.4*((last.t-pts[0].t)/1000)); // blended drift
-  const signed = cfg.mirror? -screen : screen;
-
-  let side, colour;
-  if(Math.abs(signed)<cfg.straight){ side='STRAIGHT'; colour='var(--straight)'; }
-  else {
-    const screenLeft = signed<0;
-    // bowler's-end view: right-hand bat has the off side on screen-left
-    const isOff = (cfg.hand==='R') ? screenLeft : !screenLeft;
-    side = isOff? 'OFF SIDE':'LEG SIDE';
-    colour = isOff? 'var(--off)':'var(--leg)';
-  }
-  const angle = Math.round(Math.atan2(signed, Math.max(0.08,Math.abs(dy)+0.12))*180/Math.PI);
-  const conf = Math.round(100*Math.min(1, (0.35+Math.min(1,Math.abs(signed)/0.22)*0.4) * (0.5+0.5*fx.r2) * Math.min(1,pts.length/6)));
-  const lofted = dy < -0.02 && fy.r2>0.4;
-
-  showVerdict(side, colour, `${angle>0?'+':''}${angle}° · ${conf}% · ${pts.length} pts${lofted?' · lofted':''}`);
-  shots.unshift({side, colour, drift:signed, conf, angle, lofted, at:new Date()});
-  if(shots.length>40) shots.pop();
-  renderLog(); renderWheel();
-}
-
-function showVerdict(side,colour,sub){
-  const el=$('verdict'); $('vside').textContent=side; $('vside').style.color=colour;
-  $('vsub').textContent=sub; el.classList.add('show');
-  clearTimeout(showVerdict._t); showVerdict._t=setTimeout(()=>el.classList.remove('show'),2600);
-}
-
-/* ---------------- audio onsets ---------------- */
-function readMic(t){
-  if(!analyser) return;
-  analyser.getByteFrequencyData(freq);
-  const nyq=audioCtx.sampleRate/2, per=nyq/freq.length;
-  const lo=Math.floor(1800/per), hi=Math.min(freq.length,Math.floor(8000/per));
-  let e=0; for(let i=lo;i<hi;i++) e+=freq[i];
-  e/=Math.max(1,hi-lo);
-  micLevel=e;
-  readMic.base = readMic.base===undefined? e : readMic.base*0.94+e*0.06;
-  $('micfill').style.width=Math.min(100,e/1.2)+'%';
-  if(e>Math.max(26, readMic.base*2.1) && t-(readMic.last||0)>130){
-    readMic.last=t; onsets.push(t); flashOnset=t;
-    if(onsets.length>12) onsets.shift();
-    if(phase==='armed'||phase==='idle') releaseT=t;      // first crack = machine release
-  }
-}
-
-/* ---------------- overlay ---------------- */
-function draw(shake){
-  const W=OV.width,H=OV.height,f=fitBox();
-  ox.clearRect(0,0,W,H);
-
-  if(cfg.showMask&&mask){
-    if(MC.width!==pw||MC.height!==ph){ MC.width=pw; MC.height=ph; }
-    const im=mc.createImageData(pw,ph), dd=im.data;
-    const [hr,hg,hb]=hueRGB(cfg.hue), colourOn=cfg.mode!=='motion';
-    for(let i=0,j=0;i<mask.length;i++,j+=4){
-      if(mask[i]){ dd[j]=226; dd[j+1]=69; dd[j+2]=58; dd[j+3]=210; }       // what the tracker sees
-      else if(colourOn&&cmask[i]){ dd[j]=hr; dd[j+1]=hg; dd[j+2]=hb; dd[j+3]=80; } // colour only
-    }
-    mc.putImageData(im,0,0);
-    ox.imageSmoothingEnabled=false;
-    ox.drawImage(MC,f.ox,f.oy,pw*f.sx,ph*f.sy);
-    ox.imageSmoothingEnabled=true;
-  }
-
-  // side guides
-  const cx = f.ox + (zone? zone.x*f.sx : (pw/2)*f.sx);
-  const band = cfg.straight*pw*f.sx;
-  ox.save();
-  ox.strokeStyle='#E8EFEE55'; ox.lineWidth=1; ox.setLineDash([6,8]);
-  ox.beginPath(); ox.moveTo(cx,f.oy); ox.lineTo(cx,f.oy+ph*f.sy); ox.stroke();
-  ox.setLineDash([]); ox.fillStyle='#E8EFEE14';
-  ox.fillRect(cx-band,f.oy,band*2,ph*f.sy);
-  const offLeft = (cfg.hand==='R')!==cfg.mirror;
-  ox.font='600 10px system-ui'; ox.letterSpacing='2px';
-  ox.fillStyle=offLeft?'#3FD0C9':'#FFB03A'; ox.textAlign='right'; ox.fillText(offLeft?'OFF':'LEG',cx-band-8,f.oy+16);
-  ox.fillStyle=offLeft?'#FFB03A':'#3FD0C9'; ox.textAlign='left';  ox.fillText(offLeft?'LEG':'OFF',cx+band+8,f.oy+16);
-  ox.restore();
-
-  if(zone&&cfg.useZone){
-    const [zx,zy]=toScreen(zone.x,zone.y);
-    ox.strokeStyle='#E8EFEE66'; ox.lineWidth=1;
-    ox.beginPath(); ox.arc(zx,zy,Math.max(14,pw*0.06*f.sx),0,7); ox.stroke();
-  }
-
-  // trail
-  const drawPath=(arr,col,wid)=>{
-    if(arr.length<2) return;
-    ox.strokeStyle=col; ox.lineWidth=wid; ox.lineJoin='round'; ox.beginPath();
-    arr.forEach((p,i)=>{const[a,b]=toScreen(p.x,p.y); i?ox.lineTo(a,b):ox.moveTo(a,b);});
-    ox.stroke();
-  };
-  drawPath(track,'#3FD0C9',2);
-  drawPath(post,'#FFB03A',3);
-
-  const head=post.length?post[post.length-1]:(track.length?track[track.length-1]:null);
-  if(head){
-    const[a,b]=toScreen(head.x,head.y);
-    ox.strokeStyle='#E2453A'; ox.lineWidth=2;
-    ox.beginPath(); ox.arc(a,b,Math.max(8,Math.sqrt(head.area)*f.sx),0,7); ox.stroke();
-  }
-  if(contactPt&&(phase==='contact'||performance.now()-contactT<1500)){
-    const[a,b]=toScreen(contactPt.x,contactPt.y);
-    ox.strokeStyle='#E8EFEE'; ox.lineWidth=2;
-    ox.beginPath(); ox.moveTo(a-10,b-10); ox.lineTo(a+10,b+10); ox.moveTo(a+10,b-10); ox.lineTo(a-10,b+10); ox.stroke();
-  }
-  if(shake){ ox.fillStyle='#E2453A'; ox.font='600 11px system-ui'; ox.fillText('whole frame moving — hold the phone still',12,H-12); }
-}
-
-function paintState(){
-  const s=$('pState');
-  s.textContent=phase; s.className='pill'+(phase==='tracking'?' live':phase==='contact'?' hot':'');
-  $('pFps').textContent=Math.round(fps)+' fps';
-  $('pBlob').textContent=blobCount+' blobs';
-}
-
-/* ---------------- log + wagon wheel ---------------- */
-function renderLog(){
-  const box=$('log');
-  if(!shots.length){ box.innerHTML='<div class="empty">Nothing tracked yet.</div>'; return; }
-  box.innerHTML=shots.map((s,i)=>{
-    const w=Math.min(48,Math.abs(s.drift)*180);
-    const left=s.drift<0? 50-w : 50;
-    return `<div class="entry">
-      <span class="n mono">${String(shots.length-i).padStart(2,'0')}</span>
-      <span class="bar"><i></i><u style="left:${left}%;width:${w}%;background:${s.colour}"></u></span>
-      <span class="tag" style="color:${s.colour}">${s.side.split(' ')[0]} <span class="mono" style="color:var(--dim)">${s.conf}%</span></span>
-    </div>`;
-  }).join('');
-  $('sOff').textContent=shots.filter(s=>s.side==='OFF SIDE').length;
-  $('sLeg').textContent=shots.filter(s=>s.side==='LEG SIDE').length;
-  $('sStr').textContent=shots.filter(s=>s.side==='STRAIGHT').length;
-}
-
-function renderWheel(){
-  const c=$('wheel'), g=c.getContext('2d'), W=c.width, H=c.height;
-  g.clearRect(0,0,W,H);
-  const cx=W/2, cy=H-10, R=H-24;
-  g.strokeStyle='#1E333D'; g.lineWidth=2;
-  g.beginPath(); g.arc(cx,cy,R,Math.PI,0); g.stroke();
-  g.beginPath(); g.moveTo(cx-R,cy); g.lineTo(cx+R,cy); g.stroke();
-  g.setLineDash([3,5]); g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx,cy-R); g.stroke(); g.setLineDash([]);
-  shots.forEach((s,i)=>{
-    const a=Math.PI/2 + Math.max(-1.35,Math.min(1.35, s.drift*6));
-    const r=R*(0.45+0.5*Math.min(1,s.conf/100));
-    const x=cx+Math.sin(a-Math.PI/2)*r*-1, y=cy-Math.cos(a-Math.PI/2)*r*-1;
-    const X=cx + Math.cos(Math.PI - a)*r*-1, Y=cy - Math.sin(a)*r;
-    g.globalAlpha=Math.max(.25,1-i*0.06);
-    g.strokeStyle=s.colour==='var(--off)'?'#3FD0C9':s.colour==='var(--leg)'?'#FFB03A':'#C9D6D3';
-    g.lineWidth=1.5; g.beginPath(); g.moveTo(cx,cy); g.lineTo(X,Y); g.stroke();
-    g.fillStyle=g.strokeStyle; g.beginPath(); g.arc(X,Y,2.5,0,7); g.fill();
+function request(cmd, re, timeout=1500){
+  return new Promise(async resolve=>{
+    const timer=setTimeout(()=>{ const i=waiters.findIndex(w=>w.timer===timer); if(i>=0)waiters.splice(i,1); resolve(null); }, timeout);
+    waiters.push({re,resolve,timer}); await sendCmd(cmd);
   });
-  g.globalAlpha=1;
+}
+/* every inbound message: log, resolve waiters, and (if framed) drive visuals */
+function feed(text, isFrame){
+  const cls = text.startsWith('OK')||text.startsWith('STATUS')||text.startsWith('MAC')||text.startsWith('RESULT') ? 'rxok'
+            : text.startsWith('ERR')||text.startsWith('MISS')||text.startsWith('SPUR')||text.startsWith('BUSY') ? 'rxerr' : '';
+  logLine((isFrame?'#':'< ')+text+(isFrame?'$':''), cls);
+  for(let i=waiters.length-1;i>=0;i--){
+    if(waiters[i].re.test(text)){ clearTimeout(waiters[i].timer); waiters[i].resolve(text); waiters.splice(i,1); }
+  }
+  if(isFrame) handleFrame(text);
 }
 
-/* ---------------- demo (no camera needed) ---------------- */
-function demo(){
-  const side=Math.random()<0.45?-1:(Math.random()<0.7?1:0);
-  pw=pw||288; ph=ph||162;
-  const cp={x:pw/2,y:ph*0.45}, pts=[]; const t0=performance.now();
-  for(let i=0;i<8;i++) pts.push({
-    x:cp.x+side*i*pw*0.022+(Math.random()-0.5)*1.2,
-    y:cp.y+i*ph*0.012, t:t0+i*22, area:6+i});
-  contactPt=cp; classify(pts,cp);
-  hint('Demo shot injected — the real read uses the same maths on the camera track.');
+/* ---------- framed message dispatch (scoring/panel) ---------- */
+function parseFrame(p){
+  const sp=p.indexOf(' ');
+  const verb=sp<0?p:p.slice(0,sp), rest=sp<0?'':p.slice(sp+1), f={};
+  for(const t of rest.split(' ')){ const eq=t.indexOf('='); if(eq>0) f[t.slice(0,eq)]=t.slice(eq+1); }
+  return {verb,f};
+}
+function chgBadge(c){ return c==='chg'?'CHG':c==='full'?'FULL':null; }
+function parseNodes(str,kind){
+  if(!str) return;
+  for(const tok of str.split(',')){
+    const p=tok.split(':');
+    if(kind==='roster'&&p.length>=6) noteStatus(+p[0],{batt:p[3],chg:chgBadge(p[5]),prov:p[4]==='1',ageS:+p[2]});
+    else if(kind==='batt'&&p.length>=4) noteStatus(+p[0],{batt:p[1],chg:chgBadge(p[2]),ageS:+p[3]});
+  }
+}
+function handleFrame(p){
+  const {verb,f}=parseFrame(p);
+  switch(verb){
+    case 'ARMED': clearStates(); setResult(`Delivery #${f.id} armed — waiting…`,'l-armed'); break;
+    case 'RESULT': {
+      const id=+f.win, peaks={};
+      if(f.v) for(const tk of f.v.split(',')){ const q=tk.split(':'); if(q.length>=2) peaks[+q[0]]=q[1]; }
+      clearStates(); showPeaks(peaks); markWinner(id);
+      const runs=scores.get(id);
+      setResult(`Delivery #${f.id} — winner node-${id} @ ${f.peak} g${runs?' = '+runs+' runs':''}`,'l-result'); break;
+    }
+    case 'MISS': clearStates(); $('cage').classList.add('miss');
+      setTimeout(()=>$('cage').classList.remove('miss'),1300);
+      setResult(`Delivery #${f.id} — MISS`,'l-miss'); break;
+    case 'SPUR': flashSpur(+f.node); break;
+    case 'BATT': parseNodes(f.nodes,'batt'); break;
+    case 'ROSTER': parseNodes(f.nodes,'roster'); break;
+    case 'READY': case 'CFG': applyCfg(f); break;
+    case 'OK': if(f.roster!=null) setRosterBtn(f.roster==='on'); refreshCfg(); break;
+  }
+}
+function applyCfg(f){
+  if(f.ch!=null && !$('set-ch').value)   $('set-ch').value=f.ch;
+  if(f.wait!=null && !$('set-wait').value) $('set-wait').value=f.wait;
+  if(f.roster!=null) setRosterBtn(f.roster==='on');
+  $('cfgline').textContent=`cfg: ch=${f.ch??'?'} wait=${f.wait??'?'} window=${f.window??'?'} roster=${f.roster??'?'}`;
 }
 
-/* ---------------- wiring ---------------- */
-function hint(msg){ $('hint').textContent=msg; }
-const bind=(id,key,fmt,scale)=>{
-  const s=$(id), v=$('v'+id.slice(1));
-  const upd=()=>{ cfg[key]=scale?scale(+s.value):+s.value; v.textContent=fmt?fmt(s.value):s.value; };
-  s.addEventListener('input',upd); upd();
+/* ---------- battery poll (roster is OFF by default) ---------- */
+function startBattPoll(){ stopBattPoll(); sendCmd('GETBATT'); battTimer=setInterval(()=>{ if(writer) sendCmd('GETBATT'); },8000); }
+function stopBattPoll(){ if(battTimer){ clearInterval(battTimer); battTimer=null; } }
+
+/* ================= NODE / BATTERY PANEL ================= */
+const nodeStatus=new Map();
+function battClass(s){ s=(s||'').toUpperCase();
+  if(s==='GOOD') return 'good'; if(s==='LOW') return 'low'; if(s==='CRIT') return 'crit'; return 'unk'; }
+function noteStatus(id,{batt,chg,prov,ageS}){
+  const now=Date.now(), cur=nodeStatus.get(id)||{};
+  nodeStatus.set(id,{batt:batt??cur.batt, chg:chg!==undefined?chg:cur.chg, prov:prov!=null?prov:cur.prov, seen:ageS!=null?now-ageS*1000:now});
+  renderNodes();
+}
+function ageStr(seen){ if(!seen) return '—'; const s=Math.max(0,Math.round((Date.now()-seen)/1000));
+  if(s<3)return'now'; if(s<60)return s+'s'; if(s<3600)return Math.round(s/60)+'m'; return Math.round(s/3600)+'h'; }
+const MISSING_MS=25*60*1000;
+function renderNodes(){
+  const list=$('nodesList'); const ids=new Set();
+  for(let i=1;i<=sensors.size;i++) ids.add(i);
+  for(const id of nodeStatus.keys()) ids.add(id);
+  list.replaceChildren();
+  for(const id of [...ids].sort((a,b)=>a-b)){
+    const st=nodeStatus.get(id), missing=st&&st.seen&&(Date.now()-st.seen>MISSING_MS);
+    const row=document.createElement('div'); row.className='nrow'+(missing?' missing':'');
+    const nid=document.createElement('span'); nid.className='nid'; nid.textContent='node-'+id; row.append(nid);
+    const b=document.createElement('span'); b.className='badge '+(st?battClass(st.batt):'unk'); b.textContent=st&&st.batt?st.batt:'—'; row.append(b);
+    if(st&&st.chg){ const c=document.createElement('span'); c.className='badge chg'; c.textContent=st.chg; row.append(c); }
+    if(st&&st.prov===false){ const pv=document.createElement('span'); pv.className='badge crit'; pv.textContent='UNPROV'; row.append(pv); }
+    const age=document.createElement('span'); age.className='age'; age.textContent=missing?'missing':(st?ageStr(st.seen):'…'); row.append(age);
+    list.append(row);
+  }
+  $('nodesFoot').textContent = nodeStatus.size ? '' : (port?'enable Battery poll in ⚙ Settings':'Connect to see nodes…');
+}
+setInterval(()=>{ if(!$('view-scoring').classList.contains('hide')) renderNodes(); },1000);
+
+/* ================= CAGE / SENSORS ================= */
+const CAGE={x:.25,y:.19,w:.50,h:.62}, R=22, sensors=new Map(), scores=new Map();
+function anchor(i,total){ const {x,y,w,h}=CAGE,m=.06,per=(i+.5)/Math.max(total,1),P=2*(w+h); let d=per*P,p;
+  if(d<w)p={fx:x+d,fy:y-m}; else if(d<w+h)p={fx:x+w+m,fy:y+(d-w)}; else if(d<2*w+h)p={fx:x+w-(d-w-h),fy:y+h+m}; else p={fx:x-m,fy:y+h-(d-2*w-h)};
+  p.fx=Math.min(.97,Math.max(.03,p.fx)); p.fy=Math.min(.97,Math.max(.03,p.fy)); return p; }
+function placeSensor(s){ const st=$('stage'),W=st.clientWidth,H=st.clientHeight; s.el.style.left=(s.fx*W-R)+'px'; s.el.style.top=(s.fy*H-R)+'px'; }
+function addSensor(id){ const el=document.createElement('div'); el.className='sensor'; el.dataset.id=id;
+  const num=document.createElement('span'); num.textContent=id; const pk=document.createElement('span'); pk.className='peak';
+  const sc=document.createElement('span'); sc.className='score';
+  el.append(num,pk,sc); $('stage').appendChild(el); const s={el,peakEl:pk,scoreEl:sc,fx:.5,fy:.5,pinned:false}; sensors.set(id,s); attachDrag(s); attachScoreEdit(s,id); renderScore(id); return s; }
+
+/* ---- assignable per-node score label (runs), persists across count changes ---- */
+function renderScore(id){ const s=sensors.get(id); if(!s) return; const v=scores.get(id);
+  if(v){ s.scoreEl.textContent=v; s.scoreEl.classList.add('set'); s.scoreEl.title='node-'+id+' = '+v; }
+  else { s.scoreEl.innerHTML='<span class="ph">+</span>'; s.scoreEl.classList.remove('set'); s.scoreEl.title='node-'+id+' — click to assign'; } }
+function attachScoreEdit(s,id){ ['pointerdown','pointerup','click'].forEach(ev=>s.scoreEl.addEventListener(ev,e=>e.stopPropagation()));
+  s.scoreEl.addEventListener('click',()=>beginScoreEdit(s,id)); }
+function beginScoreEdit(s,id){ if(s.scoreEl.querySelector('input')) return;
+  const inp=document.createElement('input'); inp.className='score-edit'; inp.value=scores.get(id)||''; inp.maxLength=8; inp.placeholder='runs';
+  s.scoreEl.textContent=''; s.scoreEl.appendChild(inp); inp.focus(); inp.select();
+  const commit=()=>{ const v=inp.value.trim(); if(v) scores.set(id,v); else scores.delete(id); renderScore(id); };
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); } else if(e.key==='Escape'){ e.preventDefault(); renderScore(id); } e.stopPropagation(); });
+  inp.addEventListener('blur',commit); }
+function setSensorCount(n){ n=Math.min(16,Math.max(0,Math.floor(n||0)));
+  for(const id of [...sensors.keys()]) if(id>n){ sensors.get(id).el.remove(); sensors.delete(id); }
+  for(let id=1;id<=n;id++) if(!sensors.has(id)) addSensor(id);
+  let i=0; for(let id=1;id<=n;id++){ const s=sensors.get(id); if(!s.pinned){ const a=anchor(i,n); s.fx=a.fx; s.fy=a.fy; } placeSensor(s); i++; }
+  renderNodes(); }
+function resetLayout(){ let i=0; for(let id=1;id<=sensors.size;id++){ const s=sensors.get(id),a=anchor(i++,sensors.size); s.fx=a.fx; s.fy=a.fy; s.pinned=false; placeSensor(s); } }
+function attachDrag(s){ s.el.addEventListener('pointerdown',ev=>{
+  if($('stage').classList.contains('locked')) return; ev.preventDefault();
+  const st=$('stage'),rect=st.getBoundingClientRect(),cx=s.fx*st.clientWidth,cy=s.fy*st.clientHeight;
+  const gx=ev.clientX-rect.left-cx, gy=ev.clientY-rect.top-cy; s.el.classList.add('dragging'); s.el.setPointerCapture(ev.pointerId);
+  const move=e=>{ let px=Math.min(st.clientWidth,Math.max(0,e.clientX-rect.left-gx)),py=Math.min(st.clientHeight,Math.max(0,e.clientY-rect.top-gy)); s.fx=px/st.clientWidth; s.fy=py/st.clientHeight; placeSensor(s); };
+  const up=()=>{ s.el.classList.remove('dragging'); s.pinned=true; s.el.releasePointerCapture(ev.pointerId); s.el.removeEventListener('pointermove',move); s.el.removeEventListener('pointerup',up); };
+  s.el.addEventListener('pointermove',move); s.el.addEventListener('pointerup',up); }); }
+new ResizeObserver(()=>{ for(const s of sensors.values()) placeSensor(s); }).observe($('stage'));
+
+function clearStates(){ for(const s of sensors.values()){ s.el.classList.remove('won','blink','spur','has-peak'); s.peakEl.textContent=''; } $('cage').classList.remove('miss'); }
+function setResult(t,c){ $('result').textContent=t; $('result').className=c||''; }
+function showPeaks(pk){ for(const [id,v] of Object.entries(pk)){ const s=sensors.get(+id); if(s){ s.peakEl.textContent=v+'g'; s.el.classList.add('has-peak'); } } }
+function markWinner(id){ const s=sensors.get(id); if(!s){ logLine(`node-${id} won but no sensor #${id} on layout`,'l-warn'); return; } s.el.classList.add('won','blink'); setTimeout(()=>s.el.classList.remove('blink'),3200); }
+function flashSpur(id){ const s=sensors.get(id); if(s){ s.el.classList.add('spur'); setTimeout(()=>s.el.classList.remove('spur'),900); } }
+
+/* ---------- play mode ---------- */
+function setLive(on){
+  if(on && !port) return;
+  live=on; $('play').textContent=on?'■ Stop':'▶ Play'; $('play').classList.toggle('active',on);
+  $('count').disabled=on; $('reset').disabled=on;
+  $('s-mode').textContent=on?'live':'setup'; $('s-mode').classList.toggle('live',on);
+  $('stage').classList.toggle('locked',on); $('arm').disabled=!(on&&port);
+  if(!on){ clearStates(); setResult('—',''); } else setResult('Live — press Ball Released.','l-armed');
+}
+
+/* ================= SETTINGS ================= */
+function setRosterBtn(on){ $('btn-roster').textContent='Roster: '+(on?'ON':'OFF'); $('btn-roster').dataset.on=on?'1':'0'; }
+function refreshCfg(){ if(writer) sendCmd('GETCFG'); }
+$('gear').onclick=()=>$('settings').classList.toggle('open');
+$('gear-close').onclick=()=>$('settings').classList.remove('open');
+$('btn-ch').onclick=async()=>{ const v=$('set-ch').value.trim(); const r=await request('SETCH='+v,/^OK ch=|^ERR/); if(r) refreshCfg(); };
+$('btn-wait').onclick=async()=>{ const v=$('set-wait').value.trim(); const r=await request('SETWAIT='+v,/^OK wait=|^ERR/); if(r) refreshCfg(); };
+$('btn-roster').onclick=async()=>{ const on=$('btn-roster').dataset.on==='1'; await request(on?'ROSTER=OFF':'ROSTER=ON',/^OK roster=/); };
+$('btn-batt').onclick=()=>{ const on=$('btn-batt').dataset.on==='1';
+  if(on){ stopBattPoll(); $('btn-batt').dataset.on='0'; $('btn-batt').textContent='Battery poll: OFF'; }
+  else  { startBattPoll(); $('btn-batt').dataset.on='1'; $('btn-batt').textContent='Battery poll: ON'; } };
+$('btn-getcfg').onclick=refreshCfg;
+
+/* ================= SCORING wiring ================= */
+$('pick-scoring').onclick=()=>{ show('scoring'); setSensorCount($('count').value); renderNodes(); };
+$('s-connect').onclick=async()=>{
+  if(port){ await disconnect(); $('s-connect').textContent='Connect master'; $('play').disabled=true; $('arm').disabled=true; $('gear').disabled=true; setLive(false); $('btn-batt').dataset.on='0'; $('btn-batt').textContent='Battery poll: OFF'; return; }
+  if(await openPort('scoring')){ $('s-connect').textContent='Disconnect'; $('play').disabled=false; $('gear').disabled=false; sendCmd('GETCFG'); }
 };
-bind('sDiff','diff'); bind('sMin','minA'); bind('sMax','maxA'); bind('sJolt','jolt');
-bind('sWin','win');
-bind('sStraight','straight',x=>x+'%',x=>x/100);
-bind('sHue','hueW');
-bind('sSat','sat',x=>x+'%',x=>x/100);
-bind('sVal','val',x=>x+'%',x=>x/100);
-$('ballCol').addEventListener('change',e=>{ cfg.hue=+e.target.value; updateSwatch(); });
-$('mode').addEventListener('change',e=>cfg.mode=e.target.value);
-$('btnSample').addEventListener('click',e=>{
-  sampling=!sampling; e.currentTarget.setAttribute('aria-pressed',sampling);
-  hint(sampling? 'Hold the ball still in front of the camera and tap it.'
-               : 'Sampling cancelled.');
-});
-bind('sRes','procW',x=>x,x=>{ prevGray=null; return x; });
+$('play').onclick=()=>setLive(!live);
+$('arm').onclick=()=>{ if(writer) sendCmd('ARM'); logLine('>> ARM','l-sys'); };
+$('reset').onclick=resetLayout;
+$('clear').onclick=()=>$('log').replaceChildren();
+$('count').oninput=()=>setSensorCount($('count').value);
+document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT') return;
+  if(e.code==='Space' && !$('arm').disabled){ e.preventDefault(); sendCmd('ARM'); logLine('>> ARM','l-sys'); } });
 
-const toggle=(id,fn)=>$(id).addEventListener('click',e=>{
-  const on=e.currentTarget.getAttribute('aria-pressed')!=='true';
-  e.currentTarget.setAttribute('aria-pressed',on); fn(on);
-});
-toggle('btnMask',on=>cfg.showMask=on);
-toggle('btnZone',on=>cfg.useZone=on);
-toggle('btnAudio',on=>cfg.useAudio=on);
-toggle('btnSwap',on=>{cfg.mirror=on;});
-$('hand').addEventListener('change',e=>cfg.hand=e.target.value);
-$('btnCam').addEventListener('click',startCam);
-$('btnMic').addEventListener('click',startMic);
-$('btnDemo').addEventListener('click',demo);
-$('btnClear').addEventListener('click',()=>{shots=[];renderLog();renderWheel();});
-$('btnArm').addEventListener('click',()=>{
-  phase='armed'; track=[]; post=[]; contactPt=null; onsets=[]; releaseT=0;
-  $('verdict').classList.remove('show'); hint('Armed. Feed the next ball.');
-});
+/* ================= PROVISIONING wiring ================= */
+$('pick-prov').onclick=()=>{ show('prov'); selTab('master'); };
+function selTab(which){
+  $('tab-master').classList.toggle('active',which==='master');
+  $('tab-node').classList.toggle('active',which==='node');
+  $('prov-master').classList.toggle('hide',which!=='master');
+  $('prov-node').classList.toggle('hide',which!=='node');
+}
+$('tab-master').onclick=async()=>{ if(port) await disconnect(); selTab('master'); };
+$('tab-node').onclick=async()=>{ if(port) await disconnect(); selTab('node'); };
 
-OV.addEventListener('pointerdown',e=>{
-  if(!pw) return;
-  const r=OV.getBoundingClientRect(), f=fitBox();
-  const x=(e.clientX-r.left-f.ox)/f.sx, y=(e.clientY-r.top-f.oy)/f.sy;
-  if(x<0||y<0||x>pw||y>ph) return;
-  if(sampling){ sampleColour(x,y); return; }
-  zone={x,y}; hint('Contact zone set. Off/leg is measured from this line.');
-});
-window.addEventListener('resize',()=>{ OV.width=0; sizeUp(); });
-updateSwatch(); renderWheel(); renderLog(); paintState();
+/* --- master --- */
+$('pm-connect').onclick=async()=>{ if(await openPort('prov-master')){ $('pm-fetch').disabled=false; $('pm-disc').disabled=false; $('pm-connect').disabled=true; } };
+$('pm-fetch').onclick=async()=>{
+  $('pm-mac').textContent='fetching…';
+  const line=await request('GETMAC',/^MAC addr=[0-9A-Fa-f:]{17}/);
+  if(line){ const mac=line.match(/addr=([0-9A-Fa-f:]{17})/)[1].toUpperCase(); $('pm-mac').textContent=mac; lastMasterMac=mac;
+    $('pm-hint').textContent='Copied-ready. Switch to Node and it will prefill.'; }
+  else $('pm-mac').textContent='— no reply —';
+};
+$('pm-disc').onclick=async()=>{ await disconnect(); $('pm-fetch').disabled=true; $('pm-disc').disabled=true; $('pm-connect').disabled=false; };
+
+/* --- node --- */
+function pnForm(on){ $('pn-form').style.opacity=on?'1':'.4'; $('pn-form').style.pointerEvents=on?'auto':'none';
+  $('pn-actions').style.opacity=on?'1':'.4'; $('pn-actions').style.pointerEvents=on?'auto':'none'; }
+$('pn-connect').onclick=async()=>{ if(await openPort('prov-node')){
+  $('pn-status').disabled=false; $('pn-disc').disabled=false; $('pn-connect').disabled=true; pnForm(true);
+  if(lastMasterMac) $('pn-mac').value=lastMasterMac; setTimeout(()=>$('pn-status').click(),600); } };
+$('pn-disc').onclick=async()=>{ await disconnect(); $('pn-status').disabled=true; $('pn-disc').disabled=true; $('pn-connect').disabled=false; pnForm(false); };
+$('pn-setid').onclick=()=>sendCmd('SET ID '+($('pn-id').value||'').trim());
+$('pn-setmac').onclick=()=>sendCmd('SET MAC '+($('pn-mac').value||'').trim());
+$('pn-setch').onclick=()=>sendCmd('SET CH '+($('pn-ch').value||'').trim());
+$('pn-status').onclick=()=>request('GET STATUS',/^STATUS/);
+$('pn-erase').onclick=async()=>{ await request('ERASE',/^OK erased|^ERR/); pnVerify(null); };
+$('pn-commit').onclick=async()=>{
+  const id=($('pn-id').value||'').trim(), mac=($('pn-mac').value||'').trim().toUpperCase(), ch=($('pn-ch').value||'').trim();
+  if(!id||!mac||!ch){ pnVerify(false,'Fill ID, MAC and Channel'); return; }
+  await request('SET ID '+id,/^OK id=|^ERR/); await request('SET MAC '+mac,/^OK mac=|^ERR/); await request('SET CH '+ch,/^OK ch=|^ERR/);
+  const ok=await request('COMMIT',/^OK committed|^ERR/); if(!ok||ok.startsWith('ERR')){ pnVerify(false,'Commit failed'); return; }
+  const st=await request('GET STATUS',/^STATUS/); if(!st){ pnVerify(false,'No status'); return; }
+  const g=k=>(st.match(new RegExp(k+'=([0-9A-Fa-f:]+)'))||[])[1];
+  const match=g('id')===id && (g('mac')||'').toUpperCase()===mac && g('ch')===ch && g('prov')==='1';
+  pnVerify(match, match?`✓ node-${g('id')} · ch ${g('ch')} · master ${g('mac')}`:`✗ stored id=${g('id')} mac=${g('mac')} ch=${g('ch')} prov=${g('prov')}`);
+};
+function pnVerify(state,text){ const v=$('pn-verify'); if(state===null){ v.classList.add('hide'); return; }
+  v.classList.remove('hide','ok','bad'); v.classList.add(state?'ok':'bad'); v.textContent=text; }
+$('pclear').onclick=()=>$('plog').replaceChildren();
+
+/* ---------- misc ---------- */
+$('home-btn').onclick=goHome;
+show('home');
 </script>
 </body>
 </html>
