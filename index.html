@@ -263,25 +263,29 @@ function setConn(on){
   $('status').textContent = on ? ('connected · '+mode) : 'disconnected';
 }
 function getSerial(){
-  // Native Web Serial on desktop; WebUSB polyfill on Android.
-  if('serial' in navigator) return navigator.serial;
-  if(window.__polyfillSerial) return window.__polyfillSerial;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  // On Android, native navigator.serial (Chrome 148+) needs an OS-level
+  // "Android Serial service" most phones don't have yet — it fails with an
+  // empty chooser. WebUSB has no such dependency, so prefer the polyfill here.
+  if(isAndroid && window.__polyfillSerial) return { iface:window.__polyfillSerial, kind:'WebUSB' };
+  if('serial' in navigator)               return { iface:navigator.serial,        kind:'Web Serial' };
+  if(window.__polyfillSerial)             return { iface:window.__polyfillSerial, kind:'WebUSB' };
   return null;
 }
 async function openPort(m){
-  const serialIface=getSerial();
-  if(!serialIface){ logLine('No Web Serial or WebUSB available (use Chrome/Edge, or update Chrome on Android).','rxerr'); return false; }
-  const usingPolyfill = !('serial' in navigator);
+  const sel=getSerial();
+  if(!sel){ logLine('No Web Serial or WebUSB available (use Chrome/Edge, or update Chrome on Android).','rxerr'); return false; }
+  logLine('transport: '+sel.kind,'l-sys');
   try{
     mode=m;
     // No VID filter while debugging — chooser lists all USB devices so we can
     // confirm the node enumerates at all. Re-add { usbVendorId:0x303a } once working.
-    port=await serialIface.requestPort({ filters:[] });
+    port=await sel.iface.requestPort({ filters:[] });
     await port.open({baudRate:115200});
     try{ await port.setSignals({dataTerminalReady:true,requestToSend:true}); }catch(e){}
     writer=port.writable.getWriter();
     keepReading=true; readLoop();
-    setConn(true); logLine('— connected — ('+(usingPolyfill?'WebUSB':'Web Serial')+')','l-sys');
+    setConn(true); logLine('— connected — ('+sel.kind+')','l-sys');
     return true;
   }catch(e){ logLine('connect failed: '+e.message,'rxerr'); return false; }
 }
