@@ -34,7 +34,7 @@
   .grid3{display:grid;grid-template-columns:96px 1fr auto;gap:10px 12px;align-items:center}
 
   /* home */
-  .home{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:24px auto;width:100%}
+  .home{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;max-width:900px;margin:24px auto;width:100%}
   .home .card{cursor:pointer;text-align:center;padding:40px 22px}
   .home .card:hover{border-color:var(--accent);transform:translateY(-2px)}
   .home .big{font-size:36px;margin-bottom:10px}
@@ -113,18 +113,58 @@
   .subtabs{display:flex;gap:8px;margin-bottom:16px}
   .subtabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
   .hint{color:var(--muted);font-size:12px}
+  /* ---- lane map ---- */
+  .lm-zonelist{display:flex;flex-direction:column;gap:8px}
+  .lm-zrow{display:flex;align-items:center;gap:12px;background:#0a0d12;border:1px solid var(--line);border-radius:9px;padding:10px 13px}
+  .lm-zrow input{width:18px;height:18px;accent-color:var(--accent)}
+  .lm-zrow .zn{font-weight:700;min-width:150px}
+  .lm-zrow .zd{color:var(--muted);font-size:12px}
+  .lm-zrow.locked{opacity:.85}
+  .radio{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:12.5px;text-transform:none;letter-spacing:0;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+  .radio input{accent-color:var(--accent)}
+  .lm-ends{display:flex;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:8px;padding:0 4px}
+  .lm-lane{display:grid;grid-template-columns:60px repeat(6,minmax(150px,1fr));gap:10px;overflow-x:auto;
+           background:#0a0d12;border:1px solid var(--line);border-radius:12px;padding:16px}
+  .lm-sidecol{display:flex;flex-direction:column}
+  .lm-hd{height:42px}
+  .lm-band{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .lm-band.off{flex:1}.lm-band.ctr{min-height:70px}.lm-band.leg{flex:1}
+  .lm-sidelbl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted)}
+  .lm-sidelbl.off{color:#5aa0f7}.lm-sidelbl.leg{color:#e0a93a}
+  .lm-mid{font-size:9px;color:#3a4658;letter-spacing:1px}
+  /* big rectangular zone cages, tappable */
+  .zonecol{display:flex;flex-direction:column;border:2px solid #30506e;border-radius:10px;overflow:hidden;
+           background:#0e141d;min-height:340px;cursor:pointer;transition:.15s;position:relative;
+           background-image:repeating-linear-gradient(45deg,transparent 0 12px,rgba(47,129,247,.04) 12px 13px),
+                            repeating-linear-gradient(-45deg,transparent 0 12px,rgba(47,129,247,.04) 12px 13px)}
+  .zonecol:hover{border-color:var(--accent)}
+  .zonecol.dim{opacity:.3;filter:grayscale(1);border-color:var(--line);border-style:dashed}
+  .zonecol.locked{cursor:default}
+  .zonecol.locked:hover{border-color:#30506e}
+  .zonecol .zhd{text-align:center;padding:7px 4px;background:#161d28;border-bottom:1px solid var(--line)}
+  .zonecol .zhd .zz{font-weight:800;font-size:14px}
+  .zonecol .zhd .zr{font-size:10px;color:var(--muted);margin-top:1px}
+  .zonecol .tick{position:absolute;top:6px;right:8px;font-size:12px;font-weight:800;color:var(--ok)}
+  .zonecol.dim .tick{color:var(--muted)}
+  .zonecol .lockmk{position:absolute;top:6px;right:8px;font-size:10px;color:var(--muted)}
+  .zonecol .band{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding:8px 6px}
+  .zonecol .band.off{flex:1;align-content:center;background:rgba(90,160,247,.06)}
+  .zonecol .band.ctr{min-height:70px;border-top:1px dashed #232a34;border-bottom:1px dashed #232a34}
+  .zonecol .band.leg{flex:1;align-content:center;background:rgba(224,169,58,.06)}
+  .dchips{display:flex;gap:4px;justify-content:center;padding:5px 4px;background:#0e141d;border-bottom:1px solid var(--line)}
+  .dchip{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);cursor:pointer}
+  .dchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .snode{display:flex;flex-direction:column;align-items:center;gap:2px;width:66px}
+  .snode .mk{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;
+    border:2px solid var(--line);background:var(--panel);color:var(--ink)}
+  .snode.off .mk{border-color:#5aa0f7;color:#cfe4ff}
+  .snode.leg .mk{border-color:#e0a93a;color:#ffe9c2}
+  .snode.ctr .mk{border-color:#3fb950;color:#c8f2d3}
+  .snode.round .mk{border-radius:50%}
+  .snode.board .mk{border-radius:6px;border-style:dashed}
+  .snode .cap{font-size:9.5px;color:var(--muted);text-align:center;line-height:1.15}
   code{background:var(--panel);padding:1px 5px;border-radius:4px}
 </style>
-
-<!-- Web Serial API polyfill over WebUSB — lets this tool run on Android Chrome,
-     which supports WebUSB but not (reliably) native Web Serial for USB devices.
-     On desktop, native navigator.serial is used and this is ignored. -->
-<script type="module">
-  try{
-    const { serial } = await import('https://esm.sh/web-serial-polyfill@1.0.15');
-    window.__polyfillSerial = serial;
-  }catch(e){ console.warn('serial polyfill load failed:', e); }
-</script>
 </head>
 <body>
 <header>
@@ -145,6 +185,10 @@
     <div class="card" id="pick-prov">
       <div class="big">🔧</div><h2>Provisioning</h2>
       <p>Read the master MAC, and set node ID / MAC / channel over USB.</p>
+    </div>
+    <div class="card" id="pick-lanemap">
+      <div class="big">🗺️</div><h2>Lane Map</h2>
+      <p>Visual install guide — which sensor node ID goes where. No connection needed.</p>
     </div>
   </div>
 </main>
@@ -218,6 +262,12 @@
       <label>Node ID</label><input id="pn-id" type="number" min="1" max="16" placeholder="1–16"><button id="pn-setid">Set ID</button>
       <label>Master MAC</label><input id="pn-mac" placeholder="AA:BB:CC:DD:EE:FF"><button id="pn-setmac">Set MAC</button>
       <label>Channel</label><input id="pn-ch" type="number" min="1" max="13" value="1"><button id="pn-setch">Set CH</button>
+      <label>Sensitivity</label>
+      <select id="pn-sens" style="font:inherit;background:#0a0d12;border:1px solid var(--line);color:var(--ink);padding:8px 10px;border-radius:8px">
+        <option value="1">HIGH — most sensitive (nets)</option>
+        <option value="2">MEDIUM</option>
+        <option value="3">LOW — least sensitive (rigid)</option>
+      </select><button id="pn-setsens">Set</button>
     </div>
     <div class="row" id="pn-actions" style="margin-top:14px;opacity:.4;pointer-events:none">
       <button class="primary" id="pn-commit">Commit + Verify</button>
@@ -227,6 +277,18 @@
 
   <div style="margin-top:14px" class="bar"><label>Serial</label><div class="spacer"></div><button class="ghost" id="pclear">Clear</button></div>
   <div id="plog" style="margin-top:6px;height:180px;overflow-y:auto;background:#0a0d12;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:12px;white-space:pre-wrap"></div>
+</main>
+
+<!-- ================= LANE MAP ================= -->
+<main id="view-lanemap" class="pad hide">
+  <div class="row" style="margin-bottom:10px">
+    <span class="hint">Tap a zone to include / exclude it at this site. Batting Cage (A) &amp; Machine Room (F) are always on.</span>
+    <div class="spacer"></div>
+    <span class="hint">● net &nbsp; ▢ board &nbsp;·&nbsp; grey = not installed</span>
+  </div>
+  <div class="lm-ends"><span>◀ Machine Room / bowling end</span><div class="spacer"></div><span>batsman / Batting Cage ▶</span></div>
+  <div id="lm-lane" class="lm-lane"></div>
+  <p class="hint" style="margin-top:10px">Off side (odd nodes) = top = batsman's right. &nbsp; Leg side (even nodes) = bottom = batsman's left. &nbsp; Fix each node ID at the position shown.</p>
 </main>
 
 <script>
@@ -240,7 +302,7 @@ const waiters=[];
 
 /* ---------- views ---------- */
 function show(v){
-  for(const x of ['home','scoring','prov']) $('view-'+x).classList.toggle('hide', x!==v);
+  for(const x of ['home','scoring','prov','lanemap']) $('view-'+x).classList.toggle('hide', x!==v);
   $('home-btn').classList.toggle('hide', v==='home');
   $('settings').classList.remove('open');
 }
@@ -262,30 +324,16 @@ function setConn(on){
   $('dot').classList.toggle('on',on);
   $('status').textContent = on ? ('connected · '+mode) : 'disconnected';
 }
-function getSerial(){
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  // On Android, native navigator.serial (Chrome 148+) needs an OS-level
-  // "Android Serial service" most phones don't have yet — it fails with an
-  // empty chooser. WebUSB has no such dependency, so prefer the polyfill here.
-  if(isAndroid && window.__polyfillSerial) return { iface:window.__polyfillSerial, kind:'WebUSB' };
-  if('serial' in navigator)               return { iface:navigator.serial,        kind:'Web Serial' };
-  if(window.__polyfillSerial)             return { iface:window.__polyfillSerial, kind:'WebUSB' };
-  return null;
-}
 async function openPort(m){
-  const sel=getSerial();
-  if(!sel){ logLine('No Web Serial or WebUSB available (use Chrome/Edge, or update Chrome on Android).','rxerr'); return false; }
-  logLine('transport: '+sel.kind,'l-sys');
+  if(!('serial' in navigator)){ logLine('Web Serial needs Chrome/Edge.','rxerr'); return false; }
   try{
     mode=m;
-    // No VID filter while debugging — chooser lists all USB devices so we can
-    // confirm the node enumerates at all. Re-add { usbVendorId:0x303a } once working.
-    port=await sel.iface.requestPort({ filters:[] });
+    port=await navigator.serial.requestPort();
     await port.open({baudRate:115200});
     try{ await port.setSignals({dataTerminalReady:true,requestToSend:true}); }catch(e){}
     writer=port.writable.getWriter();
     keepReading=true; readLoop();
-    setConn(true); logLine('— connected — ('+sel.kind+')','l-sys');
+    setConn(true); logLine('— connected —','l-sys');
     return true;
   }catch(e){ logLine('connect failed: '+e.message,'rxerr'); return false; }
 }
@@ -535,21 +583,106 @@ $('pn-disc').onclick=async()=>{ await disconnect(); $('pn-status').disabled=true
 $('pn-setid').onclick=()=>sendCmd('SET ID '+($('pn-id').value||'').trim());
 $('pn-setmac').onclick=()=>sendCmd('SET MAC '+($('pn-mac').value||'').trim());
 $('pn-setch').onclick=()=>sendCmd('SET CH '+($('pn-ch').value||'').trim());
-$('pn-status').onclick=()=>request('GET STATUS',/^STATUS/);
+$('pn-setsens').onclick=()=>sendCmd('SET THS '+$('pn-sens').value);
+$('pn-status').onclick=async()=>{ const st=await request('GET STATUS',/^STATUS/);
+  if(st){ const t=(st.match(/ths=(\d+)/)||[])[1]; if(t && ['1','2','3'].includes(t)) $('pn-sens').value=t; } };
 $('pn-erase').onclick=async()=>{ await request('ERASE',/^OK erased|^ERR/); pnVerify(null); };
 $('pn-commit').onclick=async()=>{
-  const id=($('pn-id').value||'').trim(), mac=($('pn-mac').value||'').trim().toUpperCase(), ch=($('pn-ch').value||'').trim();
+  const id=($('pn-id').value||'').trim(), mac=($('pn-mac').value||'').trim().toUpperCase(), ch=($('pn-ch').value||'').trim(), ths=$('pn-sens').value;
   if(!id||!mac||!ch){ pnVerify(false,'Fill ID, MAC and Channel'); return; }
-  await request('SET ID '+id,/^OK id=|^ERR/); await request('SET MAC '+mac,/^OK mac=|^ERR/); await request('SET CH '+ch,/^OK ch=|^ERR/);
+  await request('SET ID '+id,/^OK id=|^ERR/); await request('SET MAC '+mac,/^OK mac=|^ERR/); await request('SET CH '+ch,/^OK ch=|^ERR/); await request('SET THS '+ths,/^OK ths=|^ERR/);
   const ok=await request('COMMIT',/^OK committed|^ERR/); if(!ok||ok.startsWith('ERR')){ pnVerify(false,'Commit failed'); return; }
   const st=await request('GET STATUS',/^STATUS/); if(!st){ pnVerify(false,'No status'); return; }
   const g=k=>(st.match(new RegExp(k+'=([0-9A-Fa-f:]+)'))||[])[1];
-  const match=g('id')===id && (g('mac')||'').toUpperCase()===mac && g('ch')===ch && g('prov')==='1';
-  pnVerify(match, match?`✓ node-${g('id')} · ch ${g('ch')} · master ${g('mac')}`:`✗ stored id=${g('id')} mac=${g('mac')} ch=${g('ch')} prov=${g('prov')}`);
+  const sensName={'1':'HIGH','2':'MED','3':'LOW'}[g('ths')]||g('ths');
+  const match=g('id')===id && (g('mac')||'').toUpperCase()===mac && g('ch')===ch && g('ths')===ths && g('prov')==='1';
+  pnVerify(match, match?`✓ node-${g('id')} · ch ${g('ch')} · ${sensName} · master ${g('mac')}`:`✗ stored id=${g('id')} mac=${g('mac')} ch=${g('ch')} ths=${g('ths')} prov=${g('prov')}`);
 };
 function pnVerify(state,text){ const v=$('pn-verify'); if(state===null){ v.classList.add('hide'); return; }
   v.classList.remove('hide','ok','bad'); v.classList.add(state?'ok':'bad'); v.textContent=text; }
 $('pclear').onclick=()=>$('plog').replaceChildren();
+
+/* ================= LANE MAP (offline install guide) ================= */
+/* canonical node-ID -> position map. side: off|leg|center. shape: round|board. */
+const LANE=[
+  {z:'F',name:'Machine Room',runs:'4 / 6 runs',always:true,nodes:[
+    {id:11,cap:'Off · 4R',side:'off',shape:'round'},
+    {id:12,cap:'Straight · 6R',side:'center',shape:'round'},
+    {id:13,cap:'Leg · 4R',side:'leg',shape:'round'} ]},
+  {z:'E',name:'Zone E',runs:'3 runs',nodes:[
+    {id:9,cap:'Off · 3R',side:'off',shape:'round'},
+    {id:10,cap:'Leg · 3R',side:'leg',shape:'round'} ]},
+  {z:'D',name:'Zone D',runs:'3 runs',hasBoards:true,nodes:[
+    {id:7,cap:'Off · 3R',side:'off',shape:'round',grp:'net'},
+    {id:8,cap:'Leg · 3R',side:'leg',shape:'round',grp:'net'},
+    {id:14,cap:'Off · board',side:'off',shape:'board',grp:'board'},
+    {id:15,cap:'Leg · board',side:'leg',shape:'board',grp:'board'} ]},
+  {z:'C',name:'Zone C',runs:'2 runs',nodes:[
+    {id:5,cap:'Off · 2R',side:'off',shape:'round'},
+    {id:6,cap:'Leg · 2R',side:'leg',shape:'round'} ]},
+  {z:'B',name:'Zone B',runs:'1 run',nodes:[
+    {id:3,cap:'Off · 1R',side:'off',shape:'round'},
+    {id:4,cap:'Leg · 1R',side:'leg',shape:'round'} ]},
+  {z:'A',name:'Batting Cage',runs:'stumps',always:true,nodes:[
+    {id:1,cap:'Stump',side:'center',shape:'round'},
+    {id:2,cap:'Back net',side:'center',shape:'round'} ]},
+];
+const laneSel={A:true,B:false,C:false,D:false,E:false,F:true};
+let dChoice='both';
+
+function dNodesAllowed(n){ if(!n.grp) return true; if(dChoice==='both') return true; return n.grp===dChoice; }
+
+function renderLaneMap(){
+  const lane=$('lm-lane'); lane.replaceChildren();
+  /* left label column */
+  const side=document.createElement('div'); side.className='lm-sidecol';
+  side.innerHTML=`<div class="lm-hd"></div>
+    <div class="lm-band off"><span class="lm-sidelbl off">OFF&nbsp;SIDE</span></div>
+    <div class="lm-band ctr"><span class="lm-mid">CTR</span></div>
+    <div class="lm-band leg"><span class="lm-sidelbl leg">LEG&nbsp;SIDE</span></div>`;
+  lane.append(side);
+
+  for(const z of LANE){
+    const on=laneSel[z.z];
+    const col=document.createElement('div'); col.className='zonecol'+(on?'':' dim')+(z.always?' locked':'');
+    /* tap to toggle (A/F locked) */
+    if(!z.always) col.onclick=()=>{ laneSel[z.z]=!laneSel[z.z]; renderLaneMap(); };
+
+    const hd=document.createElement('div'); hd.className='zhd';
+    hd.innerHTML=`<div class="zz">Zone ${z.z}</div><div class="zr">${z.name} · ${z.runs}</div>`;
+    col.append(hd);
+    col.insertAdjacentHTML('beforeend', z.always
+      ? `<div class="lockmk">always on</div>`
+      : `<div class="tick">${on?'✓ included':'tap to add'}</div>`);
+
+    /* Zone D board/net choice chips (only meaningful when D is on) */
+    if(z.hasBoards && on){
+      const chips=document.createElement('div'); chips.className='dchips';
+      [['net','Net'],['board','Boards'],['both','Both']].forEach(([v,lbl])=>{
+        const c=document.createElement('span'); c.className='dchip'+(dChoice===v?' on':''); c.textContent=lbl;
+        c.onclick=e=>{ e.stopPropagation(); dChoice=v; renderLaneMap(); };
+        chips.append(c);
+      });
+      col.append(chips);
+    }
+
+    for(const band of ['off','center','leg']){
+      const b=document.createElement('div'); b.className='band '+(band==='center'?'ctr':band);
+      for(const n of z.nodes){
+        if(n.side!==band) continue;
+        if(z.hasBoards && on && !dNodesAllowed(n)) continue;   // respect D choice
+        const sn=document.createElement('div'); sn.className=`snode ${band==='center'?'ctr':band} ${n.shape}`;
+        const mk=document.createElement('div'); mk.className='mk'; mk.textContent=n.id;
+        const cap=document.createElement('div'); cap.className='cap'; cap.textContent=n.cap;
+        sn.append(mk,cap); b.append(sn);
+      }
+      col.append(b);
+    }
+    lane.append(col);
+  }
+}
+
+$('pick-lanemap').onclick=()=>{ show('lanemap'); renderLaneMap(); };
 
 /* ---------- misc ---------- */
 $('home-btn').onclick=goHome;
