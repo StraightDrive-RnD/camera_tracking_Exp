@@ -374,11 +374,19 @@ async function goHome(){ if(port) await disconnect(); mode=null; show('home'); }
 function logBox(){ return (mode==='prov-master'||mode==='prov-node') ? $('plog') : $('log'); }
 function stamp(){ return new Date().toLocaleTimeString('en-GB',{hour12:false}); }
 function logLine(text, cls){
-  const box=logBox(); if(!box) return;
-  const at=box.scrollHeight-box.scrollTop-box.clientHeight<40;
-  const d=document.createElement('div'); d.className='ln '+(cls||'');
-  d.innerHTML=`<span class="t">${stamp()}</span>`; d.append(document.createTextNode(text));
-  box.append(d); if(at) box.scrollTop=box.scrollHeight;
+  const box=logBox();
+  if(box){
+    const at=box.scrollHeight-box.scrollTop-box.clientHeight<40;
+    const d=document.createElement('div'); d.className='ln '+(cls||'');
+    d.innerHTML=`<span class="t">${stamp()}</span>`; d.append(document.createTextNode(text));
+    box.append(d); if(at) box.scrollTop=box.scrollHeight;
+  }
+  /* mirror into the provisioning modal log when it's open, so connect errors are visible there */
+  const pm=$('pm-log');
+  if(pm && !$('provModal').classList.contains('hide')){
+    const d2=document.createElement('div'); if(cls)d2.style.color=`var(--${cls==='rxerr'?'miss':cls==='rxok'?'ok':'muted'})`;
+    d2.textContent=text; pm.append(d2); pm.scrollTop=pm.scrollHeight;
+  }
 }
 
 /* ---------- serial core (native Web Serial on desktop, WebUSB polyfill on Android) ---------- */
@@ -397,7 +405,7 @@ async function getSerial(){
   return window._pfSerial;
 }
 /* USB vendor IDs to show in the WebUSB chooser (Espressif native USB + common UART bridges) */
-const USB_VENDORS=[0x303A,0x10C4,0x1A86,0x0403,0x2341];
+const hx=n=>'0x'+((n||0).toString(16).padStart(4,'0'));
 async function openPort(m){
   let ser;
   try{ ser=await getSerial(); }catch(e){ logLine('serial unavailable: '+e.message,'rxerr'); return false; }
@@ -405,19 +413,21 @@ async function openPort(m){
   try{
     mode=m; USING_POLYFILL=!navigator.serial;
     if(USING_POLYFILL){
-      /* The polyfill forces classCode:2 into its own filter, which hides some ESP
-         enumerations on Android ("no compatible devices"). So we run our OWN
-         vendor-filtered WebUSB chooser (no class constraint), then adopt the
-         granted device through the polyfill's getPorts(). */
-      if(!navigator.usb){ logLine('WebUSB not available on this browser.','rxerr'); return false; }
-      logLine('WebUSB — pick your ESP device in the popup…','l-sys');
-      try{ await navigator.usb.requestDevice({ filters: [] }); }   /* [] = show ALL USB devices */
-      catch(e){ logLine('no device selected ('+e.name+')','rxerr'); return false; }
-      let ports=[]; try{ ports=await ser.getPorts(); }catch(e){}
-      if(ports && ports.length){ port=ports[ports.length-1]; }
+      if(!navigator.usb){ logLine('WebUSB not available in this browser.','rxerr'); return false; }
+      /* Show what Android already knows about, for diagnosis */
+      try{ const known=await navigator.usb.getDevices();
+        logLine('already-permitted USB: '+known.length+(known.length?' ('+known.map(d=>hx(d.vendorId)+':'+hx(d.productId)).join(', ')+')':''),'l-sys'); }catch(e){}
+      let dev=null;
+      logLine('opening USB chooser — pick your node (wake it first if the list is empty)…','l-sys');
+      try{ dev=await navigator.usb.requestDevice({ filters: [] }); }   /* [] = all devices */
+      catch(e){ logLine('chooser closed: '+e.name+(e.name==='NotFoundError'?' (no device shown — node asleep? charge-only cable? OTG off?)':''),'rxerr'); return false; }
+      logLine('picked '+hx(dev.vendorId)+':'+hx(dev.productId)+' class '+dev.deviceClass,'rxok');
+      let ports=[]; try{ ports=await ser.getPorts(); }catch(e){ logLine('getPorts: '+e.name,'rxerr'); }
+      if(ports && ports.length){ port=ports[ports.length-1]; logLine('adopted via polyfill getPorts()','l-sys'); }
       else{
-        try{ port=await ser.requestPort(); }               // last resort: polyfill's own chooser
-        catch(e){ logLine('device granted but not usable as serial — its CDC interface may be claimed by Android, or the USB-C cable is charge-only','rxerr'); return false; }
+        logLine('polyfill did not wrap it — trying polyfill requestPort()…','l-sys');
+        try{ port=await ser.requestPort(); }
+        catch(e){ logLine('requestPort: '+e.name+' — device granted but the polyfill can’t use its CDC interface (Android may have claimed it)','rxerr'); return false; }
       }
     } else {
       port=await ser.requestPort();                          // desktop: native chooser (all ports)
@@ -843,6 +853,11 @@ function pmRender(){
       d.innerHTML='<label>RF channel — asked once, reused for every node</label><input id="pmw-ch-in" type="number" min="1" max="13" value="1">'; body.append(d); }
     const btn=document.createElement('button'); btn.className='primary'; btn.id='pmw-connect'; btn.textContent='🔌 Connect node USB';
     body.append(btn); btn.onclick=pmConnect;
+    const hint=document.createElement('p'); hint.className='hint'; hint.style.margin='2px 0 0';
+    hint.textContent='On a phone: wake the node (tap it once) BEFORE connecting, so it appears in the USB list.';
+    body.append(hint);
+    const dbtn=document.createElement('button'); dbtn.className='ghost'; dbtn.textContent='Diagnose USB'; dbtn.style.fontSize='12px'; dbtn.style.padding='7px 11px';
+    dbtn.onclick=pmDiagnose; body.append(dbtn);
   } else {
     body.innerHTML = `
       <div class="pm-info">
@@ -857,6 +872,25 @@ function pmRender(){
     $('pmw-verify').onclick=pmVerify;
     $('pmw-disc').onclick=async()=>{ await disconnect(); pmRender(); };
   }
+}
+async function pmDiagnose(){
+  pmLog('— USB diagnostic —');
+  pmLog('native Web Serial: '+(navigator.serial?'YES':'no (Android → WebUSB)'));
+  pmLog('WebUSB (navigator.usb): '+(navigator.usb?'YES':'NO — this browser cannot connect'));
+  if(!navigator.usb) return;
+  try{ const ds=await navigator.usb.getDevices();
+    pmLog('already-permitted devices: '+ds.length);
+    ds.forEach(d=>pmLog(` • ${hx(d.vendorId)}:${hx(d.productId)} devClass=${d.deviceClass} "${d.productName||''}"`));
+  }catch(e){ pmLog('getDevices error: '+e.name,'rxerr'); }
+  try{
+    pmLog('opening chooser (all devices)…');
+    const d=await navigator.usb.requestDevice({filters:[]});
+    pmLog(`picked ${hx(d.vendorId)}:${hx(d.productId)} devClass=${d.deviceClass} "${d.productName||''}"`,'rxok');
+    try{ if(!d.opened) await d.open(); pmLog('config #'+(d.configuration?.configurationValue));
+      d.configuration?.interfaces.forEach(i=>{ const a=i.alternate; pmLog(` if#${i.interfaceNumber} class=${a.interfaceClass} sub=${a.interfaceSubclass} claimed=${i.claimed}`); });
+      await d.close();
+    }catch(e){ pmLog('inspect: '+e.name+' — '+e.message,'rxerr'); }
+  }catch(e){ pmLog('chooser: '+e.name+(e.name==='NotFoundError'?' → nothing listed (node asleep / charge-only cable / OTG off)':''),'rxerr'); }
 }
 async function pmConnect(){
   if(!sessionMasterMac){ const v=($('pmw-mac-in')?.value||'').trim().toUpperCase();
