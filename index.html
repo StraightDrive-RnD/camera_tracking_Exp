@@ -153,26 +153,41 @@
   /* ---- clickable node + provisioning modal ---- */
   .snode{cursor:pointer}
   .snode:hover .mk{box-shadow:0 0 0 4px rgba(47,129,247,.25)}
-  .pm-overlay{position:fixed;inset:0;background:rgba(4,7,12,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
-  .pm-box{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:440px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
-  .pm-head{display:flex;align-items:center;gap:10px}
-  .pm-head h3{margin:0;font-size:15px;flex:1}
-  .pm-body{display:flex;flex-direction:column;gap:12px}
-  .pm-body .setrow{display:flex;flex-direction:column;gap:6px}
-  .pm-body input,.pm-body select{font:inherit;background:#0a0d12;border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:8px}
-  .pm-log{background:#0a0d12;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;white-space:pre-wrap}
-  .pm-verify{font-weight:700;padding:10px 12px;border-radius:9px;border:1px solid var(--line);font-size:12.5px}
-  .pm-verify.ok{color:var(--ok);border-color:var(--ok)}.pm-verify.bad{color:var(--warn);border-color:var(--warn)}
-  .kv{font-size:12px;color:var(--muted)}.kv b{color:var(--ink)}
-  /* USB-C plug-in animation */
-  .usb-anim{position:relative;height:88px;background:#0a0d12;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .usb-port{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:34px;height:26px;border:2px solid #3a4658;border-radius:5px;background:#161d28}
-  .usb-port:before{content:"";position:absolute;inset:7px 5px;border-radius:3px;background:#0e141d;border:1px solid #2a3442}
-  .usb-cable{position:absolute;top:50%;transform:translateY(-50%);left:0;height:14px;display:flex;align-items:center;animation:plug 2.2s ease-in-out infinite}
-  .usb-cable .plug{width:26px;height:14px;background:#c9d1d9;border-radius:3px 2px 2px 3px}
-  .usb-cable .wire{width:120px;height:5px;background:#48505c;border-radius:3px}
-  @keyframes plug{0%,100%{left:-6px}45%,70%{left:calc(100% - 74px)}}
-  .usb-hint{position:absolute;left:12px;bottom:6px;font-size:10px;color:var(--muted);letter-spacing:.5px}
+  body.modal-open{overflow:hidden}
+  .pm-overlay{position:fixed;inset:0;background:rgba(4,7,12,.78);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;overscroll-behavior:contain}
+  .pm-box{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:500px;max-width:96vw;max-height:90vh;overflow-y:auto;
+          padding:26px 26px 22px;display:flex;flex-direction:column;gap:18px;box-shadow:0 24px 60px rgba(0,0,0,.5);overscroll-behavior:contain}
+  .pm-head{display:flex;align-items:flex-start;gap:12px}
+  .pm-head h3{margin:0;font-size:16px;line-height:1.35;flex:1}
+  .pm-head .pm-xbtn{border:1px solid var(--line);background:transparent;color:var(--muted);width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;flex-shrink:0}
+  .pm-head .pm-xbtn:hover{border-color:var(--miss);color:var(--miss)}
+  .pm-body{display:flex;flex-direction:column;gap:16px}
+  .pm-body .setrow{display:flex;flex-direction:column;gap:7px}
+  .pm-body input,.pm-body select{font:inherit;background:#0a0d12;border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:9px;width:100%}
+  .pm-body input:focus,.pm-body select:focus{outline:none;border-color:var(--accent)}
+  .pm-body button.primary{padding:12px 16px;font-size:14px}
+  .pm-info{display:flex;flex-direction:column;gap:8px;background:#0a0d12;border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .pm-info .kv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--muted)}
+  .pm-info .kv b{color:var(--ink);font-family:"SF Mono",Consolas,monospace}
+  .pm-info .kv .saved{color:var(--ok);font-size:11px}
+  .pm-log{background:#0a0d12;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-family:"SF Mono",Consolas,monospace;font-size:11px;max-height:110px;overflow-y:auto;white-space:pre-wrap;line-height:1.5}
+  .pm-verify{font-weight:700;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:13px;line-height:1.4}
+  .pm-verify.ok{color:var(--ok);border-color:var(--ok);background:rgba(63,185,80,.06)}
+  .pm-verify.bad{color:var(--warn);border-color:var(--warn);background:rgba(210,153,34,.06)}
+  .pm-actions{display:flex;gap:10px;align-items:center}
+  .pm-actions .spacer{flex:1}
+  /* USB-C plug-in animation (cleaner: device + travelling cable + port glow) */
+  .usb-anim{position:relative;height:120px;background:linear-gradient(180deg,#0c1119,#0a0d12);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;align-items:center}
+  .usb-dev{position:absolute;right:18px;top:50%;transform:translateY(-50%);width:82px;height:60px;background:#131a24;border:2px solid #2c3a4c;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .usb-dev:after{content:"NODE";font-size:9px;font-weight:800;letter-spacing:1.5px;color:#4a5a70}
+  .usb-socket{position:absolute;right:100px;top:50%;transform:translateY(-50%);width:12px;height:18px;background:#0a0d12;border:2px solid #2c3a4c;border-right:none;border-radius:4px 0 0 4px}
+  .usb-plug{position:absolute;top:50%;transform:translateY(-50%);left:-140px;display:flex;align-items:center;animation:usbplug 2.6s cubic-bezier(.5,0,.4,1) infinite}
+  .usb-plug .tip{width:22px;height:16px;background:linear-gradient(180deg,#e6edf3,#aeb8c4);border-radius:3px 5px 5px 3px}
+  .usb-plug .cord{width:150px;height:6px;background:#39424f;border-radius:4px 0 0 4px;margin-right:-2px;order:-1}
+  .usb-glow{position:absolute;right:106px;top:50%;width:10px;height:10px;border-radius:50%;background:var(--ok);transform:translateY(-50%) scale(0);animation:usbglow 2.6s ease-in-out infinite;box-shadow:0 0 12px var(--ok)}
+  @keyframes usbplug{0%{left:-150px}55%,80%{left:calc(100% - 224px)}100%{left:-150px}}
+  @keyframes usbglow{0%,50%{transform:translateY(-50%) scale(0);opacity:0}60%,78%{transform:translateY(-50%) scale(1);opacity:1}88%,100%{transform:translateY(-50%) scale(0);opacity:0}}
+  .usb-hint{position:absolute;left:14px;bottom:9px;font-size:10.5px;color:var(--muted);letter-spacing:.5px}
   code{background:var(--panel);padding:1px 5px;border-radius:4px}
 </style>
 </head>
@@ -327,7 +342,7 @@
 <!-- ================= NODE PROVISIONING MODAL (opens from a lane-map node) ================= -->
 <div id="provModal" class="pm-overlay hide">
   <div class="pm-box">
-    <div class="pm-head"><h3 id="pm-title">Provision node</h3><button class="ghost" id="pm-x">✕</button></div>
+    <div class="pm-head"><h3 id="pm-title">Provision node</h3><button class="pm-xbtn" id="pm-x">✕</button></div>
     <div class="pm-body" id="pm-body"></div>
     <div class="pm-log" id="pm-log"></div>
   </div>
@@ -774,49 +789,67 @@ function openProvModal(nodeId, zone){
   $('pm-title').textContent=`Provision node ${nodeId} — Zone ${zone.z} · ${zone.name}`;
   $('pm-log').replaceChildren();
   $('provModal').classList.remove('hide');
+  document.body.classList.add('modal-open');      // lock background scroll
   pmRender();
 }
-async function pmClose(){ if(port && mode==='prov-node') await disconnect(); $('provModal').classList.add('hide'); }
+async function pmClose(){ if(port && mode==='prov-node') await disconnect();
+  $('provModal').classList.add('hide'); document.body.classList.remove('modal-open'); }
 $('pm-x').onclick=pmClose;
+$('provModal').addEventListener('click',e=>{ if(e.target.id==='provModal') pmClose(); });  // click backdrop to close
+
+const USB_ANIM=`
+  <div class="usb-anim">
+    <div class="usb-plug"><div class="cord"></div><div class="tip"></div></div>
+    <div class="usb-socket"></div>
+    <div class="usb-dev"></div>
+    <div class="usb-glow"></div>
+    <div class="usb-hint">plug the node's USB-C cable in, then connect</div>
+  </div>`;
 
 function pmRender(){
   const connected = !!port && mode==='prov-node';
   const body=$('pm-body'); body.replaceChildren();
   if(!connected){
-    body.innerHTML = `
-      <div class="usb-anim">
-        <div class="usb-cable"><div class="wire"></div><div class="plug"></div></div>
-        <div class="usb-port"></div>
-        <div class="usb-hint">plug node USB-C, then connect</div>
-      </div>
-      <div class="kv">Master MAC: <b>${sessionMasterMac || '— not set —'}</b>${sessionMasterMac?' <span style="color:var(--muted)">(saved, auto-filled)</span>':''}</div>
-      ${sessionMasterMac ? '' : '<div class="setrow"><label>Master MAC (asked once, reused for all nodes)</label><input id="pm-mac-in" placeholder="AA:BB:CC:DD:EE:FF"></div>'}
-      <div class="kv">RF channel: <b>${sessionChannel || '— not set —'}</b>${sessionChannel?' <span style="color:var(--muted)">(saved, auto-filled)</span>':''}</div>
-      ${sessionChannel ? '' : '<div class="setrow"><label>RF channel (asked once, reused for all nodes)</label><input id="pm-ch-in" type="number" min="1" max="13" value="1"></div>'}
-      <button class="primary" id="pm-connect">🔌 Connect node USB</button>`;
-    $('pm-connect').onclick=pmConnect;
+    body.insertAdjacentHTML('beforeend', USB_ANIM);
+    /* saved values shown as read-only chips; unset ones shown as inputs (asked once) */
+    if(sessionMasterMac || sessionChannel){
+      const info=document.createElement('div'); info.className='pm-info';
+      if(sessionMasterMac) info.innerHTML+=`<div class="kv">Master MAC <b>${sessionMasterMac}</b> <span class="saved">saved ✓</span></div>`;
+      if(sessionChannel)   info.innerHTML+=`<div class="kv">RF channel <b>${sessionChannel}</b> <span class="saved">saved ✓</span></div>`;
+      body.append(info);
+    }
+    if(!sessionMasterMac){ const d=document.createElement('div'); d.className='setrow';
+      d.innerHTML='<label>Master MAC — asked once, reused for every node</label><input id="pmw-mac-in" placeholder="AA:BB:CC:DD:EE:FF">'; body.append(d); }
+    if(!sessionChannel){ const d=document.createElement('div'); d.className='setrow';
+      d.innerHTML='<label>RF channel — asked once, reused for every node</label><input id="pmw-ch-in" type="number" min="1" max="13" value="1">'; body.append(d); }
+    const btn=document.createElement('button'); btn.className='primary'; btn.id='pmw-connect'; btn.textContent='🔌 Connect node USB';
+    body.append(btn); btn.onclick=pmConnect;
   } else {
     body.innerHTML = `
-      <div class="kv">Expected: node <b>${pmNode}</b> · master <b>${sessionMasterMac}</b> · ch <b>${sessionChannel}</b></div>
-      <button class="primary" id="pm-verify">Verify config</button>
-      <div id="pm-verifyout"></div>
-      <div id="pm-edit"></div>
-      <button class="ghost" id="pm-disc2">Disconnect node</button>`;
-    $('pm-verify').onclick=pmVerify;
-    $('pm-disc2').onclick=async()=>{ await disconnect(); pmRender(); };
+      <div class="pm-info">
+        <div class="kv">Target <b>node ${pmNode}</b> <span class="saved">Zone ${pmZone.z}</span></div>
+        <div class="kv">Master MAC <b>${sessionMasterMac}</b></div>
+        <div class="kv">RF channel <b>${sessionChannel}</b></div>
+      </div>
+      <button class="primary" id="pmw-verify">Verify config</button>
+      <div id="pmw-verifyout"></div>
+      <div id="pmw-edit"></div>
+      <div class="pm-actions"><div class="spacer"></div><button class="ghost" id="pmw-disc">Disconnect node</button></div>`;
+    $('pmw-verify').onclick=pmVerify;
+    $('pmw-disc').onclick=async()=>{ await disconnect(); pmRender(); };
   }
 }
 async function pmConnect(){
-  if(!sessionMasterMac){ const v=($('pm-mac-in')?.value||'').trim().toUpperCase();
+  if(!sessionMasterMac){ const v=($('pmw-mac-in')?.value||'').trim().toUpperCase();
     if(!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(v)){ pmLog('enter a valid master MAC (AA:BB:CC:DD:EE:FF)','rxerr'); return; } setMasterMac(v); }
-  if(!sessionChannel){ const v=($('pm-ch-in')?.value||'').trim();
+  if(!sessionChannel){ const v=($('pmw-ch-in')?.value||'').trim();
     if(!(+v>=1 && +v<=13)){ pmLog('enter channel 1–13','rxerr'); return; } setChannel(v); }
   pmLog('opening port…');
   if(await openPort('prov-node')){ pmLog('connected — verifying…','rxok'); pmRender(); setTimeout(pmVerify,700); }
-  else pmLog('connect cancelled/failed','rxerr');
+  else pmLog('connect cancelled / failed','rxerr');
 }
 async function pmVerify(){
-  const out=$('pm-verifyout'); if(out) out.innerHTML='<div class="kv">reading node…</div>';
+  const out=$('pmw-verifyout'); if(out) out.innerHTML='<div class="kv" style="color:var(--muted)">reading node…</div>';
   const st=await request('GET STATUS',/^STATUS/);
   if(!st){ if(out) out.innerHTML='<div class="pm-verify bad">No response — tap Verify again</div>'; return; }
   const g=k=>(st.match(new RegExp(k+'=([0-9A-Fa-f:]+)'))||[])[1];
@@ -824,28 +857,28 @@ async function pmVerify(){
   const expId=String(pmNode), expMac=sessionMasterMac.toUpperCase(), expCh=String(sessionChannel);
   const ok = gid===expId && gmac===expMac && gch===expCh && gprov==='1';
   if(ok){
-    out.innerHTML=`<div class="pm-verify ok">✓ Up to date — node ${gid} · ch ${gch} · ${SENS_NAME[gths]||('ths '+gths)} · master ${gmac}</div>`;
-    $('pm-edit').replaceChildren();
+    out.innerHTML=`<div class="pm-verify ok">✓ Up to date<br>node ${gid} · ch ${gch} · ${SENS_NAME[gths]||('ths '+gths)} · master ${gmac}</div>`;
+    $('pmw-edit').replaceChildren();
   } else {
-    out.innerHTML=`<div class="pm-verify bad">Needs update — stored id=${gid||'-'} mac=${gmac||'-'} ch=${gch||'-'} prov=${gprov||'0'}</div>`;
+    out.innerHTML=`<div class="pm-verify bad">Needs update<br>stored: id=${gid||'-'} · mac=${gmac||'-'} · ch=${gch||'-'} · prov=${gprov||'0'}</div>`;
     pmShowEdit(gths);
   }
 }
 function pmShowEdit(currentThs){
-  const ed=$('pm-edit');
+  const ed=$('pmw-edit');
   ed.innerHTML=`
-    <div class="setrow" style="margin-top:8px"><label>Sensitivity</label>
-      <select id="pm-sens">
+    <div class="setrow" style="margin-top:14px"><label>Sensitivity</label>
+      <select id="pmw-sens">
         <option value="1">HIGH — most sensitive (nets)</option>
         <option value="2">MEDIUM</option>
         <option value="3">LOW — least sensitive (rigid)</option>
       </select></div>
-    <button class="primary" id="pm-commit" style="margin-top:10px">Commit + Verify</button>`;
-  if(['1','2','3'].includes(currentThs)) $('pm-sens').value=currentThs;
-  $('pm-commit').onclick=pmCommit;
+    <button class="primary" id="pmw-commit" style="margin-top:14px">Commit + Verify</button>`;
+  if(['1','2','3'].includes(currentThs)) $('pmw-sens').value=currentThs;
+  $('pmw-commit').onclick=pmCommit;
 }
 async function pmCommit(){
-  const id=String(pmNode), mac=sessionMasterMac, ch=String(sessionChannel), ths=$('pm-sens').value;
+  const id=String(pmNode), mac=sessionMasterMac, ch=String(sessionChannel), ths=$('pmw-sens').value;
   pmLog(`writing id=${id} mac=${mac} ch=${ch} ths=${ths}…`);
   const steps=[['SET ID '+id,/^OK id=|^ERR/],['SET MAC '+mac,/^OK mac=|^ERR/],['SET CH '+ch,/^OK ch=|^ERR/],['SET THS '+ths,/^OK ths=|^ERR/]];
   for(const [cmd,re] of steps){ const r=await request(cmd,re); if(!r||r.startsWith('ERR')){ pmLog('failed: '+cmd+' → '+(r||'timeout'),'rxerr'); return; } await sleep(40); }
