@@ -411,8 +411,8 @@ async function openPort(m){
          granted device through the polyfill's getPorts(). */
       if(!navigator.usb){ logLine('WebUSB not available on this browser.','rxerr'); return false; }
       logLine('WebUSB — pick your ESP device in the popup…','l-sys');
-      try{ await navigator.usb.requestDevice({ filters: USB_VENDORS.map(v=>({vendorId:v})) }); }
-      catch(e){ logLine('no device selected','rxerr'); return false; }
+      try{ await navigator.usb.requestDevice({ filters: [] }); }   /* [] = show ALL USB devices */
+      catch(e){ logLine('no device selected ('+e.name+')','rxerr'); return false; }
       let ports=[]; try{ ports=await ser.getPorts(); }catch(e){}
       if(ports && ports.length){ port=ports[ports.length-1]; }
       else{
@@ -908,6 +908,9 @@ async function pmCommit(){
 
 /* ---------- misc ---------- */
 $('home-btn').onclick=goHome;
+/* On Android (no native Web Serial) preload the WebUSB polyfill now, so the
+   later Connect tap isn't spent loading it (which can consume the user gesture). */
+if(!navigator.serial){ getSerial().catch(()=>{}); }
 show('home');
 </script>
 </body>
