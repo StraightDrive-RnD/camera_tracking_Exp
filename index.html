@@ -396,19 +396,38 @@ async function getSerial(){
   }
   return window._pfSerial;
 }
+/* USB vendor IDs to show in the WebUSB chooser (Espressif native USB + common UART bridges) */
+const USB_VENDORS=[0x303A,0x10C4,0x1A86,0x0403,0x2341];
 async function openPort(m){
   let ser;
   try{ ser=await getSerial(); }catch(e){ logLine('serial unavailable: '+e.message,'rxerr'); return false; }
   if(!ser){ logLine('This browser has no Web Serial or WebUSB. Use Chrome/Edge.','rxerr'); return false; }
   try{
     mode=m; USING_POLYFILL=!navigator.serial;
-    port=await ser.requestPort();
+    if(USING_POLYFILL){
+      /* The polyfill forces classCode:2 into its own filter, which hides some ESP
+         enumerations on Android ("no compatible devices"). So we run our OWN
+         vendor-filtered WebUSB chooser (no class constraint), then adopt the
+         granted device through the polyfill's getPorts(). */
+      if(!navigator.usb){ logLine('WebUSB not available on this browser.','rxerr'); return false; }
+      logLine('WebUSB — pick your ESP device in the popup…','l-sys');
+      try{ await navigator.usb.requestDevice({ filters: USB_VENDORS.map(v=>({vendorId:v})) }); }
+      catch(e){ logLine('no device selected','rxerr'); return false; }
+      let ports=[]; try{ ports=await ser.getPorts(); }catch(e){}
+      if(ports && ports.length){ port=ports[ports.length-1]; }
+      else{
+        try{ port=await ser.requestPort(); }               // last resort: polyfill's own chooser
+        catch(e){ logLine('device granted but not usable as serial — its CDC interface may be claimed by Android, or the USB-C cable is charge-only','rxerr'); return false; }
+      }
+    } else {
+      port=await ser.requestPort();                          // desktop: native chooser (all ports)
+    }
     await port.open({baudRate:115200});
     try{ await port.setSignals({dataTerminalReady:true,requestToSend:true}); }catch(e){}
     writer=port.writable.getWriter();
     rxbuf=''; keepReading=true; readLoop();
     setConn(true); logLine('— connected'+(USING_POLYFILL?' (WebUSB)':'')+' —','l-sys');
-    await sleep(250); rxbuf='';                                  // discard boot banner / partial frames
+    await sleep(250); rxbuf='';                              // discard boot banner / partial frames
     return true;
   }catch(e){ logLine('connect failed: '+e.message,'rxerr'); return false; }
 }
