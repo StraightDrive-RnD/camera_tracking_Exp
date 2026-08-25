@@ -396,9 +396,14 @@ function setConn(on){
   $('dot').classList.toggle('on',on);
   $('status').textContent = on ? ('connected · '+mode+(USING_POLYFILL?' · WebUSB':'')) : 'disconnected';
 }
+/* Android exposes a navigator.serial STUB that finds no USB devices ("no compatible
+   devices"), so on mobile we must force the WebUSB polyfill path even though
+   navigator.serial exists. Desktop keeps native Web Serial. */
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && !/Windows|Macintosh/i.test(navigator.userAgent));
+const USE_NATIVE_SERIAL = ('serial' in navigator) && !IS_MOBILE;
 async function getSerial(){
-  if(navigator.serial) return navigator.serial;                 // desktop Chrome/Edge
-  if(!window._pfSerial){                                         // Android: load polyfill over WebUSB
+  if(USE_NATIVE_SERIAL) return navigator.serial;                // desktop Chrome/Edge
+  if(!window._pfSerial){                                        // mobile / no native: WebUSB polyfill
     const m=await import('https://cdn.jsdelivr.net/npm/web-serial-polyfill@1.0.15/+esm');
     window._pfSerial=m.serial||(m.default&&m.default.serial)||m.default;
   }
@@ -411,7 +416,7 @@ async function openPort(m){
   try{ ser=await getSerial(); }catch(e){ logLine('serial unavailable: '+e.message,'rxerr'); return false; }
   if(!ser){ logLine('This browser has no Web Serial or WebUSB. Use Chrome/Edge.','rxerr'); return false; }
   try{
-    mode=m; USING_POLYFILL=!navigator.serial;
+    mode=m; USING_POLYFILL=!USE_NATIVE_SERIAL;
     if(USING_POLYFILL){
       if(!navigator.usb){ logLine('WebUSB not available in this browser.','rxerr'); return false; }
       /* Show what Android already knows about, for diagnosis */
@@ -944,7 +949,7 @@ async function pmCommit(){
 $('home-btn').onclick=goHome;
 /* On Android (no native Web Serial) preload the WebUSB polyfill now, so the
    later Connect tap isn't spent loading it (which can consume the user gesture). */
-if(!navigator.serial){ getSerial().catch(()=>{}); }
+if(!USE_NATIVE_SERIAL){ getSerial().catch(()=>{}); }
 show('home');
 </script>
 </body>
