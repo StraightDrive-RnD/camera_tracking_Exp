@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>SD AutoScoring</title>
+<link rel="manifest" href="assets/manifest.json">
+<link rel="icon" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#141a21; --panel2:#1b232c; --line:#26313b; --line2:#33414d;
+    --ink:#e9eff4; --muted:#8996a3; --faint:#5c6873;
+    --accent:#10c9a6; --accent2:#12d68f; --accentink:#052720;
+    --off:#4aa8f0; --leg:#e6a93a; --ctr:#12d68f;
+    --ok:#33c98a; --warn:#e6a93a; --miss:#f2544b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);
+       display:flex;flex-direction:column;overscroll-behavior:none}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  .ico{width:22px;height:22px;display:inline-block;vertical-align:middle;color:inherit}
+  .ico svg{width:100%;height:100%;display:block}
+  .accent{color:var(--accent)}
+  .hide{display:none!important}
+  .spacer{flex:1}
+
+  /* top bar */
+  #topbar{display:flex;align-items:center;gap:11px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+          background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0}
+  #topbar .logo{width:34px;height:34px;flex-shrink:0;border-radius:8px;background:#0f151c;padding:4px;object-fit:contain}
+  .brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+  .brand .n{font-size:15px;font-weight:700;letter-spacing:.2px}
+  .brand .c{font-size:9.5px;font-weight:700;letter-spacing:2.5px;color:var(--accent);margin-top:2px}
+  .chip{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+        padding:6px 12px 6px 10px;font-size:12px;font-weight:600;max-width:52vw}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--miss);flex-shrink:0}
+  .chip.on .dot{background:var(--ok)}
+  .chip .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+  .chip.on .txt{color:var(--ink);font-family:"SF Mono",Consolas,monospace;font-size:11px}
+
+  /* screens */
+  #screens{flex:1;position:relative;min-height:0;overflow:hidden}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
+  .screen.hide{display:none}
+  .sbar{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-shrink:0}
+  .sbar .t{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700}
+  .stub{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--faint);text-align:center;padding:30px}
+  .stub .ico{width:44px;height:44px;color:var(--line2)}
+  .stub b{color:var(--muted);font-weight:700}
+  .btn{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+       padding:8px 13px;font-size:13px;font-weight:600;transition:.12s}
+  .btn:active{transform:scale(.97)}
+  .btn.pri{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accentink);border-color:transparent}
+  .btn .ico{width:18px;height:18px}
+  .iconbtn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;background:var(--panel2);flex-shrink:0}
+  .iconbtn .ico{width:20px;height:20px;color:var(--muted)}
+
+  /* bottom tabs */
+  #tabbar{display:flex;background:var(--panel);border-top:1px solid var(--line);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;color:var(--muted)}
+  .tab .ico{width:23px;height:23px}
+  .tab .lb{font-size:11px;font-weight:700;letter-spacing:.3px}
+  .tab.on{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <img class="logo" src="assets/logo.png" alt="SD">
+  <div class="brand"><div class="n">SD AutoScoring</div><div class="c">STRAIGHT DRIVE</div></div>
+  <div class="spacer"></div>
+  <button class="chip" id="masterChip"><span class="dot"></span><span class="txt" id="masterTxt">Master: not set</span></button>
+</header>
+
+<div id="screens">
+  <section class="screen" id="screen-lane">
+    <div class="sbar">
+      <span class="t">Lane map</span>
+      <div class="spacer"></div>
+      <button class="btn" id="editBtn"><span class="ico" data-ico="edit"></span>Edit lane</button>
+    </div>
+    <div class="stub"><span class="ico" data-ico="map"></span><div><b>Lane map</b><br>(coming next stage)</div></div>
+  </section>
+
+  <section class="screen hide" id="screen-score">
+    <div class="sbar">
+      <button class="btn" id="scoreConnect"><span class="ico" data-ico="master"></span>Connect master</button>
+      <div class="spacer"></div>
+      <button class="btn pri"><span class="ico" data-ico="play"></span>Ball Released</button>
+      <button class="iconbtn"><span class="ico" data-ico="settings"></span></button>
+    </div>
+    <div class="stub"><span class="ico" data-ico="score"></span><div><b>Score</b><br>(coming next stage)</div></div>
+  </section>
+</div>
+
+<nav id="tabbar">
+  <button class="tab on" data-tab="lane"><span class="ico" data-ico="map"></span><span class="lb">Lane</span></button>
+  <button class="tab" data-tab="score"><span class="ico" data-ico="score"></span><span class="lb">Score</span></button>
+</nav>
+
+<script>
+const $=id=>document.getElementById(id);
+
+/* paint inline SVG icons from assets/ (theme via currentColor) */
+(async()=>{
+  const names=[...new Set([...document.querySelectorAll('[data-ico]')].map(e=>e.dataset.ico))];
+  const cache={};
+  await Promise.all(names.map(async n=>{ try{cache[n]=await (await fetch('assets/'+n+'.svg')).text();}catch(e){cache[n]='';} }));
+  document.querySelectorAll('[data-ico]').forEach(e=>{ e.innerHTML=cache[e.dataset.ico]||''; });
+})();
+
+/* tabs */
+function showScreen(tab){
+  $('screen-lane').classList.toggle('hide',tab!=='lane');
+  $('screen-score').classList.toggle('hide',tab!=='score');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showScreen(t.dataset.tab));
+
+/* master chip (persisted MAC preview — full sheet comes next stage) */
+let sessionMasterMac=(()=>{try{return localStorage.getItem('sd_master_mac')||''}catch(_){return''}})();
+function refreshMasterChip(){
+  const set=!!sessionMasterMac;
+  $('masterChip').classList.toggle('on',set);
+  $('masterTxt').textContent=set?sessionMasterMac:'Master: not set';
+}
+$('masterChip').onclick=()=>{ /* opens master sheet next stage */ };
+refreshMasterChip();
+</script>
+</body>
+</html>
