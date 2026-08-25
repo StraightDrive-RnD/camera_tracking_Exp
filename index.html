@@ -123,39 +123,26 @@
   .radio{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:12.5px;text-transform:none;letter-spacing:0;background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
   .radio input{accent-color:var(--accent)}
   .lm-ends{display:flex;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:8px;padding:0 4px}
-  .lm-lane{display:grid;grid-template-columns:60px repeat(6,minmax(150px,1fr));gap:10px;overflow-x:auto;
-           background:#0a0d12;border:1px solid var(--line);border-radius:12px;padding:16px}
+  .lm-lane{display:grid;grid-template-columns:74px repeat(6,minmax(120px,1fr));gap:8px;overflow-x:auto;
+           background:#0a0d12;border:1px solid var(--line);border-radius:12px;padding:14px}
   .lm-sidecol{display:flex;flex-direction:column}
-  .lm-hd{height:42px}
+  .lm-hd{height:30px}
   .lm-band{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-  .lm-band.off{flex:1}.lm-band.ctr{min-height:70px}.lm-band.leg{flex:1}
+  .lm-band.off{min-height:104px}.lm-band.ctr{min-height:78px}.lm-band.leg{min-height:104px}
   .lm-sidelbl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted)}
   .lm-sidelbl.off{color:#5aa0f7}.lm-sidelbl.leg{color:#e0a93a}
-  .lm-mid{font-size:9px;color:#3a4658;letter-spacing:1px}
-  /* big rectangular zone cages, tappable */
-  .zonecol{display:flex;flex-direction:column;border:2px solid #30506e;border-radius:10px;overflow:hidden;
-           background:#0e141d;min-height:340px;cursor:pointer;transition:.15s;position:relative;
-           background-image:repeating-linear-gradient(45deg,transparent 0 12px,rgba(47,129,247,.04) 12px 13px),
-                            repeating-linear-gradient(-45deg,transparent 0 12px,rgba(47,129,247,.04) 12px 13px)}
-  .zonecol:hover{border-color:var(--accent)}
-  .zonecol.dim{opacity:.3;filter:grayscale(1);border-color:var(--line);border-style:dashed}
-  .zonecol.locked{cursor:default}
-  .zonecol.locked:hover{border-color:#30506e}
-  .zonecol .zhd{text-align:center;padding:7px 4px;background:#161d28;border-bottom:1px solid var(--line)}
-  .zonecol .zhd .zz{font-weight:800;font-size:14px}
-  .zonecol .zhd .zr{font-size:10px;color:var(--muted);margin-top:1px}
-  .zonecol .tick{position:absolute;top:6px;right:8px;font-size:12px;font-weight:800;color:var(--ok)}
-  .zonecol.dim .tick{color:var(--muted)}
-  .zonecol .lockmk{position:absolute;top:6px;right:8px;font-size:10px;color:var(--muted)}
-  .zonecol .band{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding:8px 6px}
-  .zonecol .band.off{flex:1;align-content:center;background:rgba(90,160,247,.06)}
-  .zonecol .band.ctr{min-height:70px;border-top:1px dashed #232a34;border-bottom:1px dashed #232a34}
-  .zonecol .band.leg{flex:1;align-content:center;background:rgba(224,169,58,.06)}
-  .dchips{display:flex;gap:4px;justify-content:center;padding:5px 4px;background:#0e141d;border-bottom:1px solid var(--line)}
-  .dchip{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);cursor:pointer}
-  .dchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .snode{display:flex;flex-direction:column;align-items:center;gap:2px;width:66px}
-  .snode .mk{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;
+  .lm-mid{display:flex;align-items:center;justify-content:center;font-size:9px;color:#3a4658;letter-spacing:1px}
+  .zonecol{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0e141d}
+  .zonecol.dim{opacity:.28;filter:grayscale(1)}
+  .zonecol .zhd{text-align:center;padding:5px 4px;background:#161d28;border-bottom:1px solid var(--line)}
+  .zonecol .zhd .zz{font-weight:800;font-size:13px}
+  .zonecol .zhd .zr{font-size:10px;color:var(--muted)}
+  .zonecol .band{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;padding:6px 4px}
+  .zonecol .band.off{min-height:104px;background:rgba(90,160,247,.05)}
+  .zonecol .band.ctr{min-height:78px;border-top:1px dashed #232a34;border-bottom:1px dashed #232a34}
+  .zonecol .band.leg{min-height:104px;background:rgba(224,169,58,.05)}
+  .snode{display:flex;flex-direction:column;align-items:center;gap:2px;width:64px}
+  .snode .mk{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
     border:2px solid var(--line);background:var(--panel);color:var(--ink)}
   .snode.off .mk{border-color:#5aa0f7;color:#cfe4ff}
   .snode.leg .mk{border-color:#e0a93a;color:#ffe9c2}
@@ -163,6 +150,29 @@
   .snode.round .mk{border-radius:50%}
   .snode.board .mk{border-radius:6px;border-style:dashed}
   .snode .cap{font-size:9.5px;color:var(--muted);text-align:center;line-height:1.15}
+  /* ---- clickable node + provisioning modal ---- */
+  .snode{cursor:pointer}
+  .snode:hover .mk{box-shadow:0 0 0 4px rgba(47,129,247,.25)}
+  .pm-overlay{position:fixed;inset:0;background:rgba(4,7,12,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .pm-box{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:440px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .pm-head{display:flex;align-items:center;gap:10px}
+  .pm-head h3{margin:0;font-size:15px;flex:1}
+  .pm-body{display:flex;flex-direction:column;gap:12px}
+  .pm-body .setrow{display:flex;flex-direction:column;gap:6px}
+  .pm-body input,.pm-body select{font:inherit;background:#0a0d12;border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:8px}
+  .pm-log{background:#0a0d12;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;white-space:pre-wrap}
+  .pm-verify{font-weight:700;padding:10px 12px;border-radius:9px;border:1px solid var(--line);font-size:12.5px}
+  .pm-verify.ok{color:var(--ok);border-color:var(--ok)}.pm-verify.bad{color:var(--warn);border-color:var(--warn)}
+  .kv{font-size:12px;color:var(--muted)}.kv b{color:var(--ink)}
+  /* USB-C plug-in animation */
+  .usb-anim{position:relative;height:88px;background:#0a0d12;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .usb-port{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:34px;height:26px;border:2px solid #3a4658;border-radius:5px;background:#161d28}
+  .usb-port:before{content:"";position:absolute;inset:7px 5px;border-radius:3px;background:#0e141d;border:1px solid #2a3442}
+  .usb-cable{position:absolute;top:50%;transform:translateY(-50%);left:0;height:14px;display:flex;align-items:center;animation:plug 2.2s ease-in-out infinite}
+  .usb-cable .plug{width:26px;height:14px;background:#c9d1d9;border-radius:3px 2px 2px 3px}
+  .usb-cable .wire{width:120px;height:5px;background:#48505c;border-radius:3px}
+  @keyframes plug{0%,100%{left:-6px}45%,70%{left:calc(100% - 74px)}}
+  .usb-hint{position:absolute;left:12px;bottom:6px;font-size:10px;color:var(--muted);letter-spacing:.5px}
   code{background:var(--panel);padding:1px 5px;border-radius:4px}
 </style>
 </head>
@@ -281,15 +291,47 @@
 
 <!-- ================= LANE MAP ================= -->
 <main id="view-lanemap" class="pad hide">
-  <div class="row" style="margin-bottom:10px">
-    <span class="hint">Tap a zone to include / exclude it at this site. Batting Cage (A) &amp; Machine Room (F) are always on.</span>
-    <div class="spacer"></div>
-    <span class="hint">● net &nbsp; ▢ board &nbsp;·&nbsp; grey = not installed</span>
-  </div>
-  <div class="lm-ends"><span>◀ Machine Room / bowling end</span><div class="spacer"></div><span>batsman / Batting Cage ▶</span></div>
-  <div id="lm-lane" class="lm-lane"></div>
-  <p class="hint" style="margin-top:10px">Off side (odd nodes) = top = batsman's right. &nbsp; Leg side (even nodes) = bottom = batsman's left. &nbsp; Fix each node ID at the position shown.</p>
+  <section id="lm-config" class="card" style="max-width:640px">
+    <h2 style="margin-top:0">Site zones</h2>
+    <p class="hint">Tick the zones installed at this site. Batting Cage (A) and Machine Room (F) are always present.</p>
+    <div id="lm-zonelist" class="lm-zonelist"></div>
+    <div id="lm-dchoice" class="hide" style="margin-top:16px">
+      <label>Zone D — which sensors are placed?</label>
+      <div class="row" style="margin-top:8px">
+        <label class="radio"><input type="radio" name="dch" value="net"> Net only (7, 8)</label>
+        <label class="radio"><input type="radio" name="dch" value="board"> Boards only (14, 15)</label>
+        <label class="radio"><input type="radio" name="dch" value="both" checked> Both (7, 8, 14, 15)</label>
+      </div>
+    </div>
+    <div id="lm-fchoice" style="margin-top:16px">
+      <label>Zone F — polycarbonate sheet (optional)</label>
+      <div class="row" style="margin-top:8px">
+        <label class="radio"><input type="checkbox" id="f16-cb"> Node 16 — polycarbonate sheet in front of screen (4 runs)</label>
+      </div>
+    </div>
+    <div class="row" style="margin-top:20px"><button class="primary" id="lm-show">Show lane map →</button></div>
+  </section>
+
+  <section id="lm-map" class="hide">
+    <div class="row" style="margin-bottom:12px">
+      <button class="ghost" id="lm-edit">← Edit selection</button>
+      <div class="spacer"></div>
+      <span class="hint">● net sensor &nbsp; ▢ target board &nbsp; · &nbsp; grey = not installed here</span>
+    </div>
+    <div class="lm-ends"><span>◀ Machine Room / bowling end</span><div class="spacer"></div><span>batsman / Batting Cage ▶</span></div>
+    <div id="lm-lane" class="lm-lane"></div>
+    <p class="hint" style="margin-top:10px">Off side (odd nodes) = batsman's right = top band. Leg side (even nodes) = batsman's left = bottom band. Fix each node ID at the position shown.</p>
+  </section>
 </main>
+
+<!-- ================= NODE PROVISIONING MODAL (opens from a lane-map node) ================= -->
+<div id="provModal" class="pm-overlay hide">
+  <div class="pm-box">
+    <div class="pm-head"><h3 id="pm-title">Provision node</h3><button class="ghost" id="pm-x">✕</button></div>
+    <div class="pm-body" id="pm-body"></div>
+    <div class="pm-log" id="pm-log"></div>
+  </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -299,6 +341,11 @@ let mode=null;            // 'scoring' | 'prov-master' | 'prov-node'
 let live=false, battTimer=null;
 let lastMasterMac=null;
 const waiters=[];
+/* remembered across nodes AND page reloads (works on GitHub Pages; may be blocked in sandboxed previews) */
+let sessionMasterMac = (()=>{ try{return localStorage.getItem('sd_master_mac')||'';}catch(_){return '';} })();
+let sessionChannel   = (()=>{ try{return localStorage.getItem('sd_channel')||'';}catch(_){return '';} })();
+function setMasterMac(m){ sessionMasterMac=(m||'').toUpperCase(); lastMasterMac=sessionMasterMac; try{localStorage.setItem('sd_master_mac',sessionMasterMac);}catch(_){} }
+function setChannel(c){ sessionChannel=String(c||''); try{localStorage.setItem('sd_channel',sessionChannel);}catch(_){} }
 
 /* ---------- views ---------- */
 function show(v){
@@ -319,21 +366,34 @@ function logLine(text, cls){
   box.append(d); if(at) box.scrollTop=box.scrollHeight;
 }
 
-/* ---------- serial core ---------- */
+/* ---------- serial core (native Web Serial on desktop, WebUSB polyfill on Android) ---------- */
+let USING_POLYFILL=false, rxbuf='';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function setConn(on){
   $('dot').classList.toggle('on',on);
-  $('status').textContent = on ? ('connected · '+mode) : 'disconnected';
+  $('status').textContent = on ? ('connected · '+mode+(USING_POLYFILL?' · WebUSB':'')) : 'disconnected';
+}
+async function getSerial(){
+  if(navigator.serial) return navigator.serial;                 // desktop Chrome/Edge
+  if(!window._pfSerial){                                         // Android: load polyfill over WebUSB
+    const m=await import('https://cdn.jsdelivr.net/npm/web-serial-polyfill@1.0.15/+esm');
+    window._pfSerial=m.serial||(m.default&&m.default.serial)||m.default;
+  }
+  return window._pfSerial;
 }
 async function openPort(m){
-  if(!('serial' in navigator)){ logLine('Web Serial needs Chrome/Edge.','rxerr'); return false; }
+  let ser;
+  try{ ser=await getSerial(); }catch(e){ logLine('serial unavailable: '+e.message,'rxerr'); return false; }
+  if(!ser){ logLine('This browser has no Web Serial or WebUSB. Use Chrome/Edge.','rxerr'); return false; }
   try{
-    mode=m;
-    port=await navigator.serial.requestPort();
+    mode=m; USING_POLYFILL=!navigator.serial;
+    port=await ser.requestPort();
     await port.open({baudRate:115200});
     try{ await port.setSignals({dataTerminalReady:true,requestToSend:true}); }catch(e){}
     writer=port.writable.getWriter();
-    keepReading=true; readLoop();
-    setConn(true); logLine('— connected —','l-sys');
+    rxbuf=''; keepReading=true; readLoop();
+    setConn(true); logLine('— connected'+(USING_POLYFILL?' (WebUSB)':'')+' —','l-sys');
+    await sleep(250); rxbuf='';                                  // discard boot banner / partial frames
     return true;
   }catch(e){ logLine('connect failed: '+e.message,'rxerr'); return false; }
 }
@@ -345,40 +405,55 @@ async function disconnect(){
   port=writer=reader=null; setConn(false); logLine('— disconnected —','l-sys');
 }
 async function readLoop(){
-  let buf='';
-  while(port && port.readable && keepReading){
+  while(port && keepReading){
+    if(!port.readable){ await sleep(50); continue; }            // WebUSB can null readable transiently
     reader=port.readable.getReader();
     try{
       const dec=new TextDecoder();
       while(true){
         const {value,done}=await reader.read(); if(done) break;
-        buf+=dec.decode(value,{stream:true});
-        let s,e;                                   // framed #..$ (master)
-        while((s=buf.indexOf('#'))>=0 && (e=buf.indexOf('$',s))>=0){
-          const p=buf.slice(s+1,e); buf=buf.slice(0,s)+buf.slice(e+1);
+        rxbuf+=dec.decode(value,{stream:true});
+        let s,e;                                                 // framed #..$ (master)
+        while((s=rxbuf.indexOf('#'))>=0 && (e=rxbuf.indexOf('$',s))>=0){
+          const p=rxbuf.slice(s+1,e); rxbuf=rxbuf.slice(0,s)+rxbuf.slice(e+1);
           if(p.length) feed(p,true);
         }
-        let nl;                                    // \n lines (node)
-        while((nl=buf.search(/[\r\n]/))>=0){
-          const l=buf.slice(0,nl); buf=buf.slice(nl+1);
+        let nl;                                                  // \n lines (node)
+        while((nl=rxbuf.search(/[\r\n]/))>=0){
+          const l=rxbuf.slice(0,nl); rxbuf=rxbuf.slice(nl+1);
           if(l.length) feed(l,false);
         }
+        if(rxbuf.length>4096) rxbuf=rxbuf.slice(-1024);          // runaway guard
       }
-    }catch(e){ logLine('read error: '+e.message,'rxerr'); }
-    finally{ reader.releaseLock(); }
+    }catch(e){ if(keepReading) logLine('read error: '+e.message,'rxerr'); }
+    finally{ try{reader.releaseLock();}catch(_){} }
+    if(keepReading) await sleep(30);                             // backoff before re-acquiring
   }
 }
 /* one command -> framed for master, line for node */
 async function sendCmd(cmd){
   if(!writer) return;
   const wire = (mode==='prov-node') ? (cmd+'\n') : ('#'+cmd+'$');
-  await writer.write(enc.encode(wire)); logLine('> '+wire,'tx');
+  try{ await writer.write(enc.encode(wire)); logLine('> '+wire,'tx'); }
+  catch(e){ logLine('send failed: '+e.message,'rxerr'); }
 }
-function request(cmd, re, timeout=1500){
+function requestOnce(cmd,re,timeout){
   return new Promise(async resolve=>{
-    const timer=setTimeout(()=>{ const i=waiters.findIndex(w=>w.timer===timer); if(i>=0)waiters.splice(i,1); resolve(null); }, timeout);
+    const timer=setTimeout(()=>{ const i=waiters.findIndex(w=>w.timer===timer); if(i>=0)waiters.splice(i,1); resolve(null); },timeout);
     waiters.push({re,resolve,timer}); await sendCmd(cmd);
   });
+}
+/* auto-retrying request: WebUSB drops the odd reply, so retry instead of making the user click 2-3x */
+async function request(cmd,re,opts={}){
+  if(typeof opts==='number') opts={timeout:opts};
+  const timeout=opts.timeout ?? (USING_POLYFILL?2500:1500);
+  const retries=opts.retries ?? (USING_POLYFILL?3:2);
+  for(let a=1;a<=retries;a++){
+    const r=await requestOnce(cmd,re,timeout);
+    if(r) return r;
+    if(a<retries){ logLine(`… no reply, retry ${a}/${retries-1}`,'l-warn'); await sleep(150); }
+  }
+  return null;
 }
 /* every inbound message: log, resolve waiters, and (if framed) drive visuals */
 function feed(text, isFrame){
@@ -429,7 +504,7 @@ function handleFrame(p){
   }
 }
 function applyCfg(f){
-  if(f.ch!=null && !$('set-ch').value)   $('set-ch').value=f.ch;
+  if(f.ch!=null){ setChannel(f.ch); if(!$('set-ch').value) $('set-ch').value=f.ch; }
   if(f.wait!=null && !$('set-wait').value) $('set-wait').value=f.wait;
   if(f.roster!=null) setRosterBtn(f.roster==='on');
   $('cfgline').textContent=`cfg: ch=${f.ch??'?'} wait=${f.wait??'?'} window=${f.window??'?'} roster=${f.roster??'?'}`;
@@ -567,7 +642,7 @@ $('pm-connect').onclick=async()=>{ if(await openPort('prov-master')){ $('pm-fetc
 $('pm-fetch').onclick=async()=>{
   $('pm-mac').textContent='fetching…';
   const line=await request('GETMAC',/^MAC addr=[0-9A-Fa-f:]{17}/);
-  if(line){ const mac=line.match(/addr=([0-9A-Fa-f:]{17})/)[1].toUpperCase(); $('pm-mac').textContent=mac; lastMasterMac=mac;
+  if(line){ const mac=line.match(/addr=([0-9A-Fa-f:]{17})/)[1].toUpperCase(); $('pm-mac').textContent=mac; setMasterMac(mac);
     $('pm-hint').textContent='Copied-ready. Switch to Node and it will prefill.'; }
   else $('pm-mac').textContent='— no reply —';
 };
@@ -608,6 +683,7 @@ const LANE=[
   {z:'F',name:'Machine Room',runs:'4 / 6 runs',always:true,nodes:[
     {id:11,cap:'Off · 4R',side:'off',shape:'round'},
     {id:12,cap:'Straight · 6R',side:'center',shape:'round'},
+    {id:16,cap:'Poly sheet · 4R',side:'center',shape:'board',grp:'poly'},
     {id:13,cap:'Leg · 4R',side:'leg',shape:'round'} ]},
   {z:'E',name:'Zone E',runs:'3 runs',nodes:[
     {id:9,cap:'Off · 3R',side:'off',shape:'round'},
@@ -629,7 +705,20 @@ const LANE=[
 ];
 const laneSel={A:true,B:false,C:false,D:false,E:false,F:true};
 let dChoice='both';
+let f16=false;   /* Zone F polycarbonate sheet (node 16), optional */
 
+function renderZoneList(){
+  const box=$('lm-zonelist'); box.replaceChildren();
+  for(const z of LANE){
+    const row=document.createElement('label'); row.className='lm-zrow'+(z.always?' locked':'');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=laneSel[z.z]; cb.disabled=!!z.always;
+    cb.onchange=()=>{ laneSel[z.z]=cb.checked; if(z.z==='D') $('lm-dchoice').classList.toggle('hide',!cb.checked); };
+    const zn=document.createElement('span'); zn.className='zn'; zn.textContent=`Zone ${z.z} — ${z.name}`;
+    const zd=document.createElement('span'); zd.className='zd'; zd.textContent=`${z.runs} · nodes ${z.nodes.map(n=>n.id).join(', ')}`;
+    row.append(cb,zn,zd); box.append(row);
+  }
+  $('lm-dchoice').classList.toggle('hide',!laneSel.D);
+}
 function dNodesAllowed(n){ if(!n.grp) return true; if(dChoice==='both') return true; return n.grp===dChoice; }
 
 function renderLaneMap(){
@@ -638,42 +727,27 @@ function renderLaneMap(){
   const side=document.createElement('div'); side.className='lm-sidecol';
   side.innerHTML=`<div class="lm-hd"></div>
     <div class="lm-band off"><span class="lm-sidelbl off">OFF&nbsp;SIDE</span></div>
-    <div class="lm-band ctr"><span class="lm-mid">CTR</span></div>
+    <div class="lm-band ctr"><span class="lm-mid">CENTRE</span></div>
     <div class="lm-band leg"><span class="lm-sidelbl leg">LEG&nbsp;SIDE</span></div>`;
   lane.append(side);
 
   for(const z of LANE){
     const on=laneSel[z.z];
-    const col=document.createElement('div'); col.className='zonecol'+(on?'':' dim')+(z.always?' locked':'');
-    /* tap to toggle (A/F locked) */
-    if(!z.always) col.onclick=()=>{ laneSel[z.z]=!laneSel[z.z]; renderLaneMap(); };
-
+    const col=document.createElement('div'); col.className='zonecol'+(on?'':' dim');
     const hd=document.createElement('div'); hd.className='zhd';
     hd.innerHTML=`<div class="zz">Zone ${z.z}</div><div class="zr">${z.name} · ${z.runs}</div>`;
     col.append(hd);
-    col.insertAdjacentHTML('beforeend', z.always
-      ? `<div class="lockmk">always on</div>`
-      : `<div class="tick">${on?'✓ included':'tap to add'}</div>`);
-
-    /* Zone D board/net choice chips (only meaningful when D is on) */
-    if(z.hasBoards && on){
-      const chips=document.createElement('div'); chips.className='dchips';
-      [['net','Net'],['board','Boards'],['both','Both']].forEach(([v,lbl])=>{
-        const c=document.createElement('span'); c.className='dchip'+(dChoice===v?' on':''); c.textContent=lbl;
-        c.onclick=e=>{ e.stopPropagation(); dChoice=v; renderLaneMap(); };
-        chips.append(c);
-      });
-      col.append(chips);
-    }
-
     for(const band of ['off','center','leg']){
       const b=document.createElement('div'); b.className='band '+(band==='center'?'ctr':band);
       for(const n of z.nodes){
         if(n.side!==band) continue;
-        if(z.hasBoards && on && !dNodesAllowed(n)) continue;   // respect D choice
+        if(z.z==='D' && on && !dNodesAllowed(n)) continue;   // respect D choice
+        if(n.id===16 && !f16) continue;                      // Zone F poly sheet optional
         const sn=document.createElement('div'); sn.className=`snode ${band==='center'?'ctr':band} ${n.shape}`;
         const mk=document.createElement('div'); mk.className='mk'; mk.textContent=n.id;
         const cap=document.createElement('div'); cap.className='cap'; cap.textContent=n.cap;
+        sn.title=`Provision node ${n.id}`;
+        sn.onclick=()=>openProvModal(n.id, z);
         sn.append(mk,cap); b.append(sn);
       }
       col.append(b);
@@ -682,7 +756,103 @@ function renderLaneMap(){
   }
 }
 
-$('pick-lanemap').onclick=()=>{ show('lanemap'); renderLaneMap(); };
+$('pick-lanemap').onclick=()=>{ show('lanemap'); renderZoneList(); $('lm-config').classList.remove('hide'); $('lm-map').classList.add('hide'); };
+$('f16-cb').onchange=()=>{ f16=$('f16-cb').checked; };
+$('lm-show').onclick=()=>{ const r=document.querySelector('input[name=dch]:checked'); dChoice=r?r.value:'both'; f16=$('f16-cb').checked;
+  renderLaneMap(); $('lm-config').classList.add('hide'); $('lm-map').classList.remove('hide'); };
+$('lm-edit').onclick=()=>{ $('lm-map').classList.add('hide'); $('lm-config').classList.remove('hide'); };
+document.querySelectorAll('input[name=dch]').forEach(r=>r.onchange=()=>{ dChoice=r.value; });
+
+/* ================= NODE PROVISIONING MODAL ================= */
+const SENS_NAME={'1':'HIGH','2':'MED','3':'LOW'};
+let pmNode=null, pmZone=null;
+function pmLog(t,c){ const box=$('pm-log'); const d=document.createElement('div'); if(c)d.style.color=`var(--${c==='rxerr'?'miss':c==='rxok'?'ok':'muted'})`;
+  d.textContent=t; box.append(d); box.scrollTop=box.scrollHeight; }
+
+function openProvModal(nodeId, zone){
+  pmNode=nodeId; pmZone=zone;
+  $('pm-title').textContent=`Provision node ${nodeId} — Zone ${zone.z} · ${zone.name}`;
+  $('pm-log').replaceChildren();
+  $('provModal').classList.remove('hide');
+  pmRender();
+}
+async function pmClose(){ if(port && mode==='prov-node') await disconnect(); $('provModal').classList.add('hide'); }
+$('pm-x').onclick=pmClose;
+
+function pmRender(){
+  const connected = !!port && mode==='prov-node';
+  const body=$('pm-body'); body.replaceChildren();
+  if(!connected){
+    body.innerHTML = `
+      <div class="usb-anim">
+        <div class="usb-cable"><div class="wire"></div><div class="plug"></div></div>
+        <div class="usb-port"></div>
+        <div class="usb-hint">plug node USB-C, then connect</div>
+      </div>
+      <div class="kv">Master MAC: <b>${sessionMasterMac || '— not set —'}</b>${sessionMasterMac?' <span style="color:var(--muted)">(saved, auto-filled)</span>':''}</div>
+      ${sessionMasterMac ? '' : '<div class="setrow"><label>Master MAC (asked once, reused for all nodes)</label><input id="pm-mac-in" placeholder="AA:BB:CC:DD:EE:FF"></div>'}
+      <div class="kv">RF channel: <b>${sessionChannel || '— not set —'}</b>${sessionChannel?' <span style="color:var(--muted)">(saved, auto-filled)</span>':''}</div>
+      ${sessionChannel ? '' : '<div class="setrow"><label>RF channel (asked once, reused for all nodes)</label><input id="pm-ch-in" type="number" min="1" max="13" value="1"></div>'}
+      <button class="primary" id="pm-connect">🔌 Connect node USB</button>`;
+    $('pm-connect').onclick=pmConnect;
+  } else {
+    body.innerHTML = `
+      <div class="kv">Expected: node <b>${pmNode}</b> · master <b>${sessionMasterMac}</b> · ch <b>${sessionChannel}</b></div>
+      <button class="primary" id="pm-verify">Verify config</button>
+      <div id="pm-verifyout"></div>
+      <div id="pm-edit"></div>
+      <button class="ghost" id="pm-disc2">Disconnect node</button>`;
+    $('pm-verify').onclick=pmVerify;
+    $('pm-disc2').onclick=async()=>{ await disconnect(); pmRender(); };
+  }
+}
+async function pmConnect(){
+  if(!sessionMasterMac){ const v=($('pm-mac-in')?.value||'').trim().toUpperCase();
+    if(!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(v)){ pmLog('enter a valid master MAC (AA:BB:CC:DD:EE:FF)','rxerr'); return; } setMasterMac(v); }
+  if(!sessionChannel){ const v=($('pm-ch-in')?.value||'').trim();
+    if(!(+v>=1 && +v<=13)){ pmLog('enter channel 1–13','rxerr'); return; } setChannel(v); }
+  pmLog('opening port…');
+  if(await openPort('prov-node')){ pmLog('connected — verifying…','rxok'); pmRender(); setTimeout(pmVerify,700); }
+  else pmLog('connect cancelled/failed','rxerr');
+}
+async function pmVerify(){
+  const out=$('pm-verifyout'); if(out) out.innerHTML='<div class="kv">reading node…</div>';
+  const st=await request('GET STATUS',/^STATUS/);
+  if(!st){ if(out) out.innerHTML='<div class="pm-verify bad">No response — tap Verify again</div>'; return; }
+  const g=k=>(st.match(new RegExp(k+'=([0-9A-Fa-f:]+)'))||[])[1];
+  const gid=g('id'), gmac=(g('mac')||'').toUpperCase(), gch=g('ch'), gths=g('ths')||'1', gprov=g('prov');
+  const expId=String(pmNode), expMac=sessionMasterMac.toUpperCase(), expCh=String(sessionChannel);
+  const ok = gid===expId && gmac===expMac && gch===expCh && gprov==='1';
+  if(ok){
+    out.innerHTML=`<div class="pm-verify ok">✓ Up to date — node ${gid} · ch ${gch} · ${SENS_NAME[gths]||('ths '+gths)} · master ${gmac}</div>`;
+    $('pm-edit').replaceChildren();
+  } else {
+    out.innerHTML=`<div class="pm-verify bad">Needs update — stored id=${gid||'-'} mac=${gmac||'-'} ch=${gch||'-'} prov=${gprov||'0'}</div>`;
+    pmShowEdit(gths);
+  }
+}
+function pmShowEdit(currentThs){
+  const ed=$('pm-edit');
+  ed.innerHTML=`
+    <div class="setrow" style="margin-top:8px"><label>Sensitivity</label>
+      <select id="pm-sens">
+        <option value="1">HIGH — most sensitive (nets)</option>
+        <option value="2">MEDIUM</option>
+        <option value="3">LOW — least sensitive (rigid)</option>
+      </select></div>
+    <button class="primary" id="pm-commit" style="margin-top:10px">Commit + Verify</button>`;
+  if(['1','2','3'].includes(currentThs)) $('pm-sens').value=currentThs;
+  $('pm-commit').onclick=pmCommit;
+}
+async function pmCommit(){
+  const id=String(pmNode), mac=sessionMasterMac, ch=String(sessionChannel), ths=$('pm-sens').value;
+  pmLog(`writing id=${id} mac=${mac} ch=${ch} ths=${ths}…`);
+  const steps=[['SET ID '+id,/^OK id=|^ERR/],['SET MAC '+mac,/^OK mac=|^ERR/],['SET CH '+ch,/^OK ch=|^ERR/],['SET THS '+ths,/^OK ths=|^ERR/]];
+  for(const [cmd,re] of steps){ const r=await request(cmd,re); if(!r||r.startsWith('ERR')){ pmLog('failed: '+cmd+' → '+(r||'timeout'),'rxerr'); return; } await sleep(40); }
+  const c=await request('COMMIT',/^OK committed|^ERR/);
+  if(!c||c.startsWith('ERR')){ pmLog('commit failed','rxerr'); return; }
+  pmLog('committed ✓ re-verifying…','rxok'); await sleep(80); pmVerify();
+}
 
 /* ---------- misc ---------- */
 $('home-btn').onclick=goHome;
