@@ -92,6 +92,18 @@
   @keyframes spur{50%{border-color:var(--warn);box-shadow:0 0 0 7px rgba(230,169,58,.3)}}
   .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;color:var(--muted);text-align:center;padding:24px}
   .empty .ico{width:38px;height:38px;color:var(--line2)}
+  /* score: fit the whole lane to the screen (no horizontal scroll) */
+  .lanewrap.fit{overflow:hidden}
+  .lane.fit{width:100%;min-width:0}
+  .lane.fit .zone{flex:1 1 0;min-width:0;width:auto}
+  .lane.fit .zone .zhd .r{display:none}
+  .lane.fit .zband{gap:4px;padding:4px 2px;min-height:38px}
+  .lane.fit .zband.ctr{flex:0 0 40px;min-height:40px}
+  .lane.fit .nd{width:auto;min-width:0}
+  .lane.fit .nd .cap{display:none}
+  .lane.fit .nd .mk{width:30px;height:30px;font-size:12px}
+  .lane.fit .nd .runs{font-size:8px}
+  .lane.fit .sidecol{width:16px} .lane.fit .slbl{font-size:7.5px;letter-spacing:1px}
   .result{padding:8px 14px;font-size:13px;text-align:center;border-top:1px solid var(--line);background:var(--panel);flex-shrink:0;min-height:38px;display:flex;align-items:center;justify-content:center}
   .result.win{color:var(--accent);font-weight:700} .result.miss{color:var(--miss);font-weight:700} .result.armed{color:var(--warn)}
 
@@ -142,17 +154,9 @@
   .slog{background:#0a0e13;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-family:"SF Mono",Consolas,monospace;
         font-size:10.5px;line-height:1.5;max-height:120px;overflow-y:auto;white-space:pre-wrap;color:var(--muted);margin-top:12px}
   .hint{color:var(--muted);font-size:11.5px;margin:0 0 12px}
-  .usb{position:relative;height:104px;background:linear-gradient(180deg,#0d131a,#0a0e13);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px}
-  .usb .dev{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:72px;height:52px;background:#131b24;border:2px solid var(--line2);border-radius:9px;display:flex;align-items:center;justify-content:center}
-  .usb .dev:after{content:"NODE";font-size:8px;font-weight:800;letter-spacing:1.5px;color:var(--faint)}
-  .usb .sock{position:absolute;right:90px;top:50%;transform:translateY(-50%);width:10px;height:16px;background:#0a0e13;border:2px solid var(--line2);border-right:none;border-radius:4px 0 0 4px}
-  .usb .plug{position:absolute;top:50%;transform:translateY(-50%);left:-140px;display:flex;align-items:center;animation:usbp 2.6s cubic-bezier(.5,0,.4,1) infinite}
-  .usb .plug .tip{width:19px;height:14px;background:linear-gradient(180deg,#eef3f7,#aeb8c4);border-radius:3px 5px 5px 3px}
-  .usb .plug .cord{width:150px;height:6px;background:#39424f;border-radius:4px 0 0 4px;margin-right:-2px}
-  .usb .glow{position:absolute;right:95px;top:50%;width:9px;height:9px;border-radius:50%;background:var(--accent);transform:translateY(-50%) scale(0);animation:usbg 2.6s ease-in-out infinite;box-shadow:0 0 12px var(--accent)}
-  @keyframes usbp{0%{left:-150px}55%,80%{left:calc(100% - 200px)}100%{left:-150px}}
-  @keyframes usbg{0%,50%{transform:translateY(-50%) scale(0);opacity:0}60%,78%{transform:translateY(-50%) scale(1);opacity:1}88%,100%{transform:translateY(-50%) scale(0);opacity:0}}
-  .usb .h{position:absolute;left:13px;bottom:7px;font-size:9.5px;color:var(--muted)}
+  .plugbox{display:flex;align-items:center;gap:14px;background:#0a0e13;border:1px solid var(--line);border-radius:12px;padding:16px 16px;margin-bottom:14px}
+  .plugbox .ico{width:30px;height:30px;color:var(--accent);flex-shrink:0}
+  .plugbox .t{font-size:12.5px;color:var(--muted);line-height:1.4}
 </style>
 </head>
 <body>
@@ -236,7 +240,7 @@ const ICONS={
   node:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M19 5l-2.5 2.5M7.5 16.5 5 19"/></svg>',
   usb:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v14"/><path d="M9 19a3 3 0 0 0 6 0v-3H9v3Z"/><path d="m8 6 4-4 4 4"/><circle cx="12" cy="20.5" r="1.3" fill="currentColor" stroke="none"/></svg>',
   battery:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 10v4"/><rect x="4" y="9" width="9" height="6" rx="1" fill="currentColor" stroke="none"/></svg>',
-  settings:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg>',
+  settings:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="5" x2="14" y2="5"/><line x1="10" y1="5" x2="3" y2="5"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="19" x2="16" y2="19"/><line x1="12" y1="19" x2="3" y2="19"/><line x1="14" y1="3" x2="14" y2="7"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="17" x2="16" y2="21"/></svg>',
   edit:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
   play:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.87l12-7.5a1 1 0 0 0 0-1.74l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg>',
   close:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'
@@ -366,7 +370,8 @@ function renderLane(wrap,opts){
     e.innerHTML=`<span class="ico">${$('editBtn').querySelector('.ico').innerHTML}</span><div>No lane configured yet.<br>Tap <b>Edit lane</b> to pick your zones.</div>`;
     wrap.append(e); if(opts.glow)scoreLaneEl=null; return;
   }
-  const lane=document.createElement('div'); lane.className='lane';
+  const lane=document.createElement('div'); lane.className='lane'+(opts.fit?' fit':'');
+  wrap.classList.toggle('fit',!!opts.fit);
   const side=document.createElement('div'); side.className='sidecol';
   side.innerHTML='<div class="hd"></div><div class="band"><span class="slbl off">OFF&nbsp;SIDE</span></div><div class="band ctr"></div><div class="band"><span class="slbl leg">LEG&nbsp;SIDE</span></div>';
   lane.append(side);
@@ -381,6 +386,12 @@ function renderLane(wrap,opts){
       const ch=document.createElement('div'); ch.className='chips';
       [['net','Net'],['board','Board'],['both','Both']].forEach(([v,l])=>{const c=document.createElement('span');c.className='chipx'+(dChoice===v?' on':'');c.textContent=l;c.onclick=ev=>{ev.stopPropagation();dChoice=v;saveLane();renderBoth();};ch.append(c);});
       col.append(ch);
+    }
+    if(opts.edit && z.z==='F'){
+      const ch=document.createElement('div'); ch.className='chips';
+      const c=document.createElement('span'); c.className='chipx'+(f16?' on':''); c.textContent='Poly · Node 16';
+      c.onclick=ev=>{ev.stopPropagation();f16=!f16;saveLane();renderBoth();};
+      ch.append(c); col.append(ch);
     }
     for(const band of ['off','center','leg']){
       const b=document.createElement('div'); b.className='zband '+(band==='center'?'ctr':band);
@@ -404,7 +415,7 @@ function renderLane(wrap,opts){
 }
 function renderBoth(){
   renderLane($('wrapLane'),{edit:editMode,interactive:!editMode});
-  renderLane($('wrapScore'),{edit:false,interactive:false,glow:true});
+  renderLane($('wrapScore'),{edit:false,interactive:false,glow:true,fit:true});
   $('editLbl').textContent=editMode?'Done':'Edit lane';
   $('editBtn').classList.toggle('pri',editMode);
 }
@@ -453,13 +464,15 @@ $('mSave').onclick=()=>{
 };
 
 /* ---- node provisioning sheet ---- */
-const SENS={'1':'HIGH','2':'MED','3':'LOW'};
+const SENS={'1':'Very high','2':'High','3':'Medium','4':'Low','5':'Very low'};
+/* smart default wake-threshold per node type: nets=1, boards=3, poly sheet(16)=5 */
+function defaultSens(id){ if(id===16) return 5; if([11,12,13,14,15].includes(id)) return 3; return 1; }
 let pNode=null,pZone=null;
 function openProv(id,zone){ pNode=id; pZone=zone; curLog=$('pLog'); $('pLog').replaceChildren(); $('pTitle').textContent=`Node ${id} — Zone ${zone.z}`; provRender(); sheet('sheet-prov'); }
 function provRender(){
   const connected=!!port&&mode==='node'; const b=$('pBody'); b.replaceChildren();
   if(!connected){
-    b.insertAdjacentHTML('beforeend','<div class="usb"><div class="plug"><div class="cord"></div><div class="tip"></div></div><div class="sock"></div><div class="dev"></div><div class="glow"></div><div class="h">plug node USB-C, then connect</div></div>');
+    b.insertAdjacentHTML('beforeend',`<div class="plugbox"><span class="ico">${ICONS.usb}</span><div class="t">Plug the node's USB-C cable into this device, then connect.</div></div>`);
     const info=document.createElement('div'); info.className='info';
     info.innerHTML=`<div class="kv">Master MAC <b>${sessionMasterMac||'— not set —'}</b>${sessionMasterMac?'<span class="ok">auto ✓</span>':''}</div><div class="kv">RF channel <b>${sessionChannel||'— not set —'}</b>${sessionChannel?'<span class="ok">auto ✓</span>':''}</div>`;
     b.append(info);
@@ -467,10 +480,21 @@ function provRender(){
     const btn=document.createElement('button'); btn.className='btn pri'; btn.textContent='Connect node USB'; btn.style.marginBottom='10px'; btn.onclick=provConnect; b.append(btn);
     const h=document.createElement('p'); h.className='hint'; h.style.margin='0'; h.textContent='On a phone: wake the node (tap it once) before connecting.'; b.append(h);
   }else{
+    const def=String(defaultSens(pNode));
     b.innerHTML=`<div class="info"><div class="kv">Target <b>node ${pNode}</b><span class="ok">Zone ${pZone.z}</span></div><div class="kv">Master <b>${sessionMasterMac||'—'}</b></div><div class="kv">Channel <b>${sessionChannel||'—'}</b></div></div>
-      <button class="btn pri" id="pVerify" style="margin-bottom:12px">Verify config</button><div id="pVout"></div><div id="pEdit"></div>
+      <button class="btn pri" id="pVerify" style="margin-bottom:12px">Verify config</button><div id="pVout"></div>
+      <div class="field" style="margin-top:12px"><label>Sensitivity (wake threshold)</label>
+        <select id="pSens">
+          <option value="1">Very high — 1 · nets</option>
+          <option value="2">High — 2</option>
+          <option value="3">Medium — 3 · boards</option>
+          <option value="4">Low — 4</option>
+          <option value="5">Very low — 5 · poly sheet</option>
+        </select></div>
+      <button class="btn pri" id="pCommit" style="margin-bottom:6px">Commit + Verify</button>
       <button class="btn" id="pDisc">Disconnect node</button>`;
-    $('pVerify').onclick=provVerify; $('pDisc').onclick=async()=>{await disconnect();provRender();};
+    $('pSens').value=def;                    // smart default for this node type
+    $('pVerify').onclick=provVerify; $('pCommit').onclick=provCommit; $('pDisc').onclick=async()=>{await disconnect();provRender();};
   }
 }
 async function provConnect(){
@@ -483,15 +507,10 @@ async function provVerify(){
   if(!st){if(out)out.innerHTML='<div class="verify bad">No response — tap Verify again</div>';return;}
   const g=k=>(st.match(new RegExp(k+'=([0-9A-Fa-f:]+)'))||[])[1];
   const gid=g('id'),gmac=(g('mac')||'').toUpperCase(),gch=g('ch'),gths=g('ths')||'1',gp=g('prov');
+  if(['1','2','3','4','5'].includes(gths)) $('pSens').value=gths;   // reflect what's actually on the node
   const ok=gid===String(pNode)&&gmac===sessionMasterMac.toUpperCase()&&gch===String(sessionChannel)&&gp==='1';
-  if(ok){out.innerHTML=`<div class="verify ok">✓ Up to date<br>node ${gid} · ch ${gch} · ${SENS[gths]||('ths '+gths)}</div>`;$('pEdit').replaceChildren();}
-  else{out.innerHTML=`<div class="verify bad">Needs update<br>stored id=${gid||'-'} mac=${gmac||'-'} ch=${gch||'-'} prov=${gp||'0'}</div>`;provEdit(gths);}
-}
-function provEdit(cur){
-  const ed=$('pEdit');
-  ed.innerHTML=`<div class="field" style="margin-top:12px"><label>Sensitivity</label><select id="pSens"><option value="1">HIGH — most sensitive (nets)</option><option value="2">MEDIUM</option><option value="3">LOW — rigid</option></select></div><button class="btn pri" id="pCommit">Commit + Verify</button>`;
-  if(['1','2','3'].includes(cur))$('pSens').value=cur;
-  $('pCommit').onclick=provCommit;
+  if(ok) out.innerHTML=`<div class="verify ok">✓ Up to date<br>node ${gid} · ch ${gch} · ${SENS[gths]||('ths '+gths)} sensitivity</div>`;
+  else   out.innerHTML=`<div class="verify bad">Needs update<br>stored id=${gid||'-'} mac=${gmac||'-'} ch=${gch||'-'} prov=${gp||'0'}</div>`;
 }
 async function provCommit(){
   const id=String(pNode),mac=sessionMasterMac,ch=String(sessionChannel),ths=$('pSens').value;
