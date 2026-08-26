@@ -604,37 +604,41 @@ function handleFrame(p){
     (f.v||'').split(',').forEach(e=>{const id=+e.split(':')[0];if(id)seenNode(id);}); renderNodesIfOpen();}
   else if(verb==='MISS'){clearGlow();setScoreResult(`#${f.id} · MISS`,'miss');}
   else if(verb==='SPUR'){flashSpur(+f.node); seenNode(+f.node); renderNodesIfOpen();}
-  else if(verb==='ROSTER'){ (f.nodes||'').split(',').forEach(e=>{const q=e.split(':'); if(q.length>=6) updHealth(+q[0],+q[3],+q[5],+q[2]);}); renderNodesIfOpen(); }
-  else if(verb==='BATT'){ (f.nodes||'').split(',').forEach(e=>{const q=e.split(':'); if(q.length>=4) updHealth(+q[0],+q[1],+q[2],+q[3]);}); renderNodesIfOpen(); }
+  else if(verb==='ROSTER'){ (f.nodes||'').split(',').forEach(e=>{const q=e.split(':'); if(q.length>=6) updHealth(+q[0],q[3],q[5],+q[2],q[1]);}); renderNodesIfOpen(); }
+  else if(verb==='BATT'){ (f.nodes||'').split(',').forEach(e=>{const q=e.split(':'); if(q.length>=4) updHealth(+q[0],q[1],q[2],+q[3]);}); renderNodesIfOpen(); }
   else if(verb==='READY'||verb==='CFG'){applyCfg(f);}
   else if(verb==='OK'&&f.roster!=null){$('swRoster').classList.toggle('on',f.roster==='on');}
 }
 
 /* ---- node health tracking ---- */
-const nodeHealth={};          // id -> {seen, batt, chg}
+const nodeHealth={};          // id -> {seen, batt, chg, state}
 let connectedAt=0;
 function seenNode(id){ if(!id)return; if(!nodeHealth[id])nodeHealth[id]={}; nodeHealth[id].seen=Date.now(); }
-function updHealth(id,batt,chg,ageMs){ if(!id)return; if(!nodeHealth[id])nodeHealth[id]={}; const h=nodeHealth[id]; if(batt!=null&&!isNaN(batt))h.batt=batt; if(chg!=null&&!isNaN(chg))h.chg=chg; h.seen=Date.now()-((ageMs!=null&&!isNaN(ageMs))?ageMs:0); }
+/* battStr: GOOD/LOW/CRIT · chgStr: chg/full/dis/unk · ageSec: seconds since last packet */
+function updHealth(id,battStr,chgStr,ageSec,state){ if(!id)return; if(!nodeHealth[id])nodeHealth[id]={}; const h=nodeHealth[id];
+  if(battStr) h.batt=battStr; if(chgStr) h.chg=chgStr; if(state) h.state=state;
+  const age=(ageSec!=null&&!isNaN(+ageSec))?+ageSec:0; h.seen=Date.now()-age*1000; }
 function relTime(ts){ const s=Math.max(0,Math.round((Date.now()-ts)/1000)); if(s<5)return 'just now'; if(s<60)return s+'s ago'; const m=Math.round(s/60); if(m<60)return m+'m ago'; return Math.round(m/60)+'h ago'; }
-const BATTL={0:{t:'Good',c:'ok'},1:{t:'Low',c:'warn'},2:{t:'Critical',c:'crit'}};
-const CHGL={0:'on battery',1:'charging',2:'full',3:''};
+const BATTL={GOOD:{t:'Good',c:'ok'},LOW:{t:'Low',c:'warn'},CRIT:{t:'Critical',c:'crit'}};
+const CHGL={chg:'charging',full:'full',dis:'on battery',unk:''};
 function selectedNodes(){ const out=[]; for(const z of LANE){ if(!laneSel[z.z])continue; for(const n of z.nodes){ if(!dAllowed(n))continue; out.push({id:n.id,side:n.side,shape:n.shape,cap:n.cap,zone:z.z}); } } return out; }
 function renderNodes(){
   const box=$('nodesList'); if(!box)return; box.replaceChildren();
   const nodes=selectedNodes(); let seen=0;
   for(const n of nodes){
-    const h=nodeHealth[n.id]; const ok=h&&h.seen&&h.seen>=connectedAt-2000;
+    const h=nodeHealth[n.id]; const ok=!!(h&&h.seen);
     if(ok)seen++;
-    const batt=h&&h.batt!=null?BATTL[h.batt]:null;
-    const chg=h&&h.chg!=null?CHGL[h.chg]:'';
+    const batt=h&&h.batt?BATTL[h.batt]:null;
+    const chg=h&&h.chg?CHGL[h.chg]:'';
+    const miss=h&&h.state==='miss';
     const row=document.createElement('div'); row.className='nrow '+(ok?'seen':'unseen');
     row.innerHTML=`<div class="nid ${n.side} ${n.shape}">${n.id}</div>
       <div class="nmid"><div class="nt">Zone ${n.zone} · ${n.cap}</div>
-        <div class="nsub">${ok?('<span class="live">●</span> seen '+relTime(h.seen)):'no signal yet'}</div></div>
+        <div class="nsub">${ok?('<span class="live">●</span> seen '+relTime(h.seen)+(miss?' · missing':'')):'no signal yet'}</div></div>
       <div class="nbatt">${batt?`<span class="bt ${batt.c}">${batt.t}</span>`:'<span class="bt none">—</span>'}${chg?`<span class="chg ${chg==='charging'?'charging':''}">${chg}</span>`:''}</div>`;
     box.append(row);
   }
-  $('nodesSummary').textContent=`${seen} of ${nodes.length} nodes detected since connection`;
+  $('nodesSummary').textContent=`${seen} of ${nodes.length} nodes reporting`;
 }
 function renderNodesIfOpen(){ if(openSheetId==='sheet-nodes')renderNodes(); }
 let nodesTimer=null;
