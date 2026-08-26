@@ -113,14 +113,25 @@
   .tab .ico{width:21px;height:21px} .tab .lb{font-size:10.5px;font-weight:700}
   .tab.on{color:var(--accent)}
 
-  /* landscape phone: compact + row layout for tabs to reclaim height */
-  @media (orientation:landscape) and (max-height:520px){
-    :root{--bar:40px;--tabs:0px}
+  /* landscape phone: compact + left tab rail + zones that fully fit the short height */
+  @media (orientation:landscape) and (max-height:560px){
+    :root{--bar:38px;--tabs:0px}
     .brand .c{display:none}
-    #tabbar{position:fixed;left:0;top:var(--bar);bottom:0;width:58px;height:auto;flex-direction:column;justify-content:flex-start;
+    #tabbar{position:fixed;left:0;top:var(--bar);bottom:0;width:54px;height:auto;flex-direction:column;justify-content:flex-start;
             border-top:none;border-right:1px solid var(--line);padding-top:8px;gap:4px;z-index:5}
-    .tab{flex:0 0 auto;padding:10px 0}
-    #screens{margin-left:58px}
+    .tab{flex:0 0 auto;padding:9px 0} .tab .ico{width:19px;height:19px} .tab .lb{font-size:9.5px}
+    #screens{margin-left:54px}
+    .sbar{padding:6px 10px}
+    .lanewrap{padding:7px}
+    .lane{min-height:0}
+    .sidecol .hd{height:30px}
+    .zone .zhd{padding:4px 5px} .zone .zhd .z{font-size:11.5px} .zone .zhd .r{display:none}
+    .zband{min-height:0;padding:3px 4px;gap:5px}
+    .zband.ctr{flex:0 0 34px;min-height:0}
+    .nd{width:auto} .nd .mk{width:32px;height:32px;font-size:12.5px} .nd .cap{display:none} .nd .runs{font-size:8px}
+    .chips{padding:3px} .chipx{font-size:8.5px;padding:2px 7px}
+    .result{min-height:32px;padding:5px 12px;font-size:12px}
+    .lane.fit .nd .mk{width:28px;height:28px;font-size:11px} .lane.fit .zband{min-height:0}
   }
 
   /* sheets */
