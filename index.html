@@ -261,7 +261,14 @@
   <div class="field"><label>Wait-for-hit window (ms)</label><div class="rowb"><input id="setWait" type="number" min="1000" max="120000" step="1000"><button class="btn" id="setWaitBtn">Set</button></div></div>
   <div class="toggle"><div><div class="lb">Battery polling</div><div class="sub2">reads node battery every 8 s</div></div><div class="sw" id="swBatt"></div></div>
   <div class="toggle"><div><div class="lb">Liveness roster</div><div class="sub2">streaming node health</div></div><div class="sw" id="swRoster"></div></div>
-  <button class="btn" id="cfgRefresh" style="margin-top:14px">Refresh config</button>
+  <div style="margin-top:14px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700">Ring LED blink</div>
+  <div class="rowb" style="margin-top:8px">
+    <div class="field" style="flex:1;margin:0"><label>Times</label><input id="bkCount" type="number" min="1" max="50" value="3"></div>
+    <div class="field" style="flex:1;margin:0"><label>On ms</label><input id="bkOn" type="number" min="20" max="5000" step="50" value="500"></div>
+    <div class="field" style="flex:1;margin:0"><label>Off ms</label><input id="bkOff" type="number" min="20" max="5000" step="50" value="500"></div>
+  </div>
+  <button class="btn" id="bkSet" style="margin-top:10px">Apply blink pattern</button>
+  <button class="btn" id="cfgRefresh" style="margin-top:10px">Refresh config</button>
 </div>
 
 <script>
@@ -371,18 +378,19 @@ function parseFrame(p){const sp=p.indexOf(' ');const verb=sp<0?p:p.slice(0,sp),r
 /* ================= LANE MODEL ================= */
 const LANE=[
   {z:'F',name:'Machine Room',runs:'4/6',always:true,nodes:[
-    {id:11,cap:'Off · 4R',side:'off',shape:'round',runs:'4'},
-    {id:12,cap:'Straight · 6R',side:'center',shape:'round',runs:'6'},
-    {id:16,cap:'Poly · 4R',side:'center',shape:'board',grp:'poly',runs:'4'},
-    {id:13,cap:'Leg · 4R',side:'leg',shape:'round',runs:'4'} ]},
+    {id:13,cap:'Off · 4R',side:'off',shape:'board',runs:'4'},
+    {id:15,cap:'Off · 6R',side:'off',shape:'board',runs:'6'},
+    {id:17,cap:'Poly · 4R',side:'center',shape:'board',grp:'poly',runs:'4'},
+    {id:14,cap:'Leg · 4R',side:'leg',shape:'board',runs:'4'},
+    {id:16,cap:'Leg · 6R',side:'leg',shape:'board',runs:'6'} ]},
   {z:'E',name:'Zone E',runs:'3',nodes:[
-    {id:9,cap:'Off · 3R',side:'off',shape:'round',runs:'3'},
-    {id:10,cap:'Leg · 3R',side:'leg',shape:'round',runs:'3'} ]},
+    {id:11,cap:'Off · 3R',side:'off',shape:'round',runs:'3'},
+    {id:12,cap:'Leg · 3R',side:'leg',shape:'round',runs:'3'} ]},
   {z:'D',name:'Zone D',runs:'3',hasBoards:true,nodes:[
     {id:7,cap:'Off · 3R',side:'off',shape:'round',grp:'net',runs:'3'},
     {id:8,cap:'Leg · 3R',side:'leg',shape:'round',grp:'net',runs:'3'},
-    {id:14,cap:'Off · board',side:'off',shape:'board',grp:'board',runs:'3'},
-    {id:15,cap:'Leg · board',side:'leg',shape:'board',grp:'board',runs:'3'} ]},
+    {id:9,cap:'Off · board',side:'off',shape:'board',grp:'board',runs:'3'},
+    {id:10,cap:'Leg · board',side:'leg',shape:'board',grp:'board',runs:'3'} ]},
   {z:'C',name:'Zone C',runs:'2',nodes:[
     {id:5,cap:'Off · 2R',side:'off',shape:'round',runs:'2'},
     {id:6,cap:'Leg · 2R',side:'leg',shape:'round',runs:'2'} ]},
@@ -390,7 +398,7 @@ const LANE=[
     {id:3,cap:'Off · 1R',side:'off',shape:'round',runs:'1'},
     {id:4,cap:'Leg · 1R',side:'leg',shape:'round',runs:'1'} ]},
   {z:'A',name:'Batting Cage',runs:'stumps',always:true,nodes:[
-    {id:1,cap:'Stump',side:'center',shape:'round',runs:'W'},
+    {id:1,cap:'Stump',side:'center',shape:'board',runs:'W'},
     {id:2,cap:'Back net',side:'center',shape:'round',runs:'0'} ]},
 ];
 const RUNS=Object.fromEntries(LANE.flatMap(z=>z.nodes.map(n=>[n.id,n.runs])));
@@ -523,8 +531,15 @@ $('mSave').onclick=()=>{
 
 /* ---- node provisioning sheet ---- */
 const SENS={'1':'Very high','2':'High','3':'Medium','4':'Low','5':'Very low'};
+const bcCount=()=>Math.max(1,Math.min(50,+(($('bkCount')||{}).value||3)));
+const bcOn=()=>Math.max(20,Math.min(5000,+(($('bkOn')||{}).value||500)));
+const bcOff=()=>Math.max(20,Math.min(5000,+(($('bkOff')||{}).value||500)));
 /* smart default wake-threshold per node type: nets=1, boards=3, poly sheet(16)=5 */
-function defaultSens(id){ if(id===16) return 5; if([11,12,13,14,15].includes(id)) return 3; return 1; }
+const BOARD_IDS=[1,9,10,13,14,15,16,17];
+function isBoard(id){ return BOARD_IDS.includes(id); }
+function defaultSurface(id){ return isBoard(id)?'board':'net'; }
+/* wake sensitivity default: poly(17)=Very low, other boards=Medium, nets=Very high */
+function defaultSens(id){ if(id===17) return 5; if(isBoard(id)) return 3; return 1; }
 let pNode=null,pZone=null;
 function openProv(id,zone){ pNode=id; pZone=zone; curLog=$('pLog'); $('pLog').replaceChildren(); $('pTitle').textContent=`Node ${id} — Zone ${zone.z}`; provRender(); sheet('sheet-prov'); }
 function provRender(){
@@ -538,10 +553,12 @@ function provRender(){
     const btn=document.createElement('button'); btn.className='btn pri'; btn.textContent='Connect node USB'; btn.style.marginBottom='10px'; btn.onclick=provConnect; b.append(btn);
     const h=document.createElement('p'); h.className='hint'; h.style.margin='0'; h.textContent='On a phone: wake the node (tap it once) before connecting.'; b.append(h);
   }else{
-    const def=String(defaultSens(pNode));
+    const def=String(defaultSens(pNode)); const surf=defaultSurface(pNode);
     b.innerHTML=`<div class="info"><div class="kv">Target <b>node ${pNode}</b><span class="ok">Zone ${pZone.z}</span></div><div class="kv">Master <b>${sessionMasterMac||'—'}</b></div><div class="kv">Channel <b>${sessionChannel||'—'}</b></div></div>
       <button class="btn pri" id="pVerify" style="margin-bottom:12px">Verify config</button><div id="pVout"></div>
-      <div class="field" style="margin-top:12px"><label>Sensitivity (wake threshold)</label>
+      <div class="field" style="margin-top:12px"><label>Mount surface</label>
+        <select id="pSurf"><option value="net">Net — sleeps, battery</option><option value="board">Board — always powered, ring LED</option></select></div>
+      <div class="field"><label>Sensitivity (wake threshold)</label>
         <select id="pSens">
           <option value="1">Very high — 1 · nets</option>
           <option value="2">High — 2</option>
@@ -550,9 +567,12 @@ function provRender(){
           <option value="5">Very low — 5 · poly sheet</option>
         </select></div>
       <button class="btn pri" id="pCommit" style="margin-bottom:6px">Commit + Verify</button>
+      <div class="rowb" style="margin-bottom:6px"><button class="btn" id="pTestRing">Test ring LED</button><button class="btn" id="pTestStat">Test STAT LED</button></div>
       <button class="btn" id="pDisc">Disconnect node</button>`;
-    $('pSens').value=def;                    // smart default for this node type
+    $('pSens').value=def; $('pSurf').value=surf;      // smart defaults for this node
     $('pVerify').onclick=provVerify; $('pCommit').onclick=provCommit; $('pDisc').onclick=async()=>{await disconnect();provRender();};
+    $('pTestRing').onclick=async()=>{ L('test ring…'); await request('TEST RING '+bcCount()+' '+bcOn()+' '+bcOff(),/^OK ring|^ERR/); };
+    $('pTestStat').onclick=async()=>{ L('test stat…'); await request('TEST STAT',/^OK stat|^ERR/); };
   }
 }
 async function provConnect(){
@@ -566,14 +586,16 @@ async function provVerify(){
   const g=k=>(st.match(new RegExp(k+'=([0-9A-Fa-f:]+)'))||[])[1];
   const gid=g('id'),gmac=(g('mac')||'').toUpperCase(),gch=g('ch'),gths=g('ths')||'1',gp=g('prov');
   if(['1','2','3','4','5'].includes(gths)) $('pSens').value=gths;   // reflect what's actually on the node
-  const ok=gid===String(pNode)&&gmac===sessionMasterMac.toUpperCase()&&gch===String(sessionChannel)&&gp==='1';
-  if(ok) out.innerHTML=`<div class="verify ok">✓ Up to date<br>node ${gid} · ch ${gch} · ${SENS[gths]||('ths '+gths)} sensitivity</div>`;
+  const gsurf=(st.match(/surf=(net|board)/)||[])[1]; if(gsurf&&$('pSurf')) $('pSurf').value=gsurf;
+  const wantSurf=$('pSurf')?$('pSurf').value:defaultSurface(pNode);
+  const ok=gid===String(pNode)&&gmac===sessionMasterMac.toUpperCase()&&gch===String(sessionChannel)&&gp==='1'&&(!gsurf||gsurf===wantSurf);
+  if(ok) out.innerHTML=`<div class="verify ok">✓ Up to date<br>node ${gid} · ${gsurf||wantSurf} · ch ${gch} · ${SENS[gths]||('ths '+gths)}</div>`;
   else   out.innerHTML=`<div class="verify bad">Needs update<br>stored id=${gid||'-'} mac=${gmac||'-'} ch=${gch||'-'} prov=${gp||'0'}</div>`;
 }
 async function provCommit(){
-  const id=String(pNode),mac=sessionMasterMac,ch=String(sessionChannel),ths=$('pSens').value;
-  L(`writing id=${id} ch=${ch} ths=${ths}…`);
-  for(const [c,re] of [['SET ID '+id,/^OK id=|^ERR/],['SET MAC '+mac,/^OK mac=|^ERR/],['SET CH '+ch,/^OK ch=|^ERR/],['SET THS '+ths,/^OK ths=|^ERR/]]){
+  const id=String(pNode),mac=sessionMasterMac,ch=String(sessionChannel),ths=$('pSens').value,surf=$('pSurf').value;
+  L(`writing id=${id} ch=${ch} ths=${ths} surf=${surf}…`);
+  for(const [c,re] of [['SET ID '+id,/^OK id=|^ERR/],['SET MAC '+mac,/^OK mac=|^ERR/],['SET CH '+ch,/^OK ch=|^ERR/],['SET THS '+ths,/^OK ths=|^ERR/],['SET SURFACE '+surf,/^OK surf=|^ERR/]]){
     const r=await request(c,re); if(!r||r.startsWith('ERR')){L('failed: '+c,'e');return;} await sleep(40);
   }
   const cm=await request('COMMIT',/^OK committed|^ERR/); if(!cm||cm.startsWith('ERR')){L('commit failed','e');return;}
@@ -649,7 +671,8 @@ function applyCfg(f){
   if(f.ch!=null){setChannel(f.ch);if(!$('setCh').value)$('setCh').value=f.ch;}
   if(f.wait!=null&&!$('setWait').value)$('setWait').value=f.wait;
   if(f.roster!=null)$('swRoster').classList.toggle('on',f.roster==='on');
-  $('cfgLine').innerHTML=`cfg ch=<b>${f.ch??'?'}</b> wait=<b>${f.wait??'?'}</b> win=<b>${f.window??'?'}</b> roster=<b>${f.roster??'?'}</b>`;
+  if(f.blink){const m=f.blink.split(':'); if(m.length===3){$('bkCount').value=m[0];$('bkOn').value=m[1];$('bkOff').value=m[2];}}
+  $('cfgLine').innerHTML=`cfg ch=<b>${f.ch??'?'}</b> wait=<b>${f.wait??'?'}</b> roster=<b>${f.roster??'?'}</b> blink=<b>${f.blink??'?'}</b>`;
 }
 $('settingsBtn').onclick=()=>{ curLog=null; if(port&&mode==='score')sendCmd('GETCFG'); sheet('sheet-settings'); };
 $('setChBtn').onclick=async()=>{ if(mode!=='score')return; const r=await request('SETCH='+$('setCh').value.trim(),/^OK ch=|^ERR/); if(r)sendCmd('GETCFG'); };
@@ -659,6 +682,7 @@ let battTimer=null;
 function startBattPoll(){ stopBattPoll(); sendCmd('GETBATT'); battTimer=setInterval(()=>{if(writer&&mode==='score')sendCmd('GETBATT');},8000); }
 function stopBattPoll(){ if(battTimer){clearInterval(battTimer);battTimer=null;} }
 $('swBatt').onclick=()=>{ const on=$('swBatt').classList.toggle('on'); if(on&&mode==='score')startBattPoll(); else stopBattPoll(); };
+$('bkSet').onclick=async()=>{ if(mode!=='score'){L('connect master first','e');return;} const r=await request('BLINKCFG='+bcCount()+':'+bcOn()+':'+bcOff(),/^OK blinkcfg=|^ERR/); if(r)sendCmd('GETCFG'); };
 $('cfgRefresh').onclick=()=>{ if(mode==='score')sendCmd('GETCFG'); };
 
 $('editBtn').onclick=()=>{ editMode=!editMode; if(!editMode)saveLane(); renderBoth(); };
