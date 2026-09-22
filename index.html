@@ -256,7 +256,7 @@
 <div class="sheet" id="sheet-settings">
   <div class="grip"></div><button class="sheet-close" data-ico="close" data-close></button>
   <h3><span class="ico accent" data-ico="settings"></span> Master settings</h3>
-  <div class="info"><div class="kv" id="cfgLine">cfg —</div></div>
+  <div class="info"><div class="kv">Firmware <b id="fwVer">—</b></div><div class="kv" id="cfgLine">cfg —</div></div>
   <div class="field"><label>ESP-NOW channel (1–13)</label><div class="rowb"><input id="setCh" type="number" min="1" max="13"><button class="btn" id="setChBtn">Set</button></div></div>
   <div class="field"><label>Wait-for-hit window (ms)</label><div class="rowb"><input id="setWait" type="number" min="1000" max="120000" step="1000"><button class="btn" id="setWaitBtn">Set</button></div></div>
   <div class="toggle"><div><div class="lb">Battery polling</div><div class="sub2">reads node battery every 8 s</div></div><div class="sw" id="swBatt"></div></div>
@@ -268,6 +268,7 @@
     <div class="field" style="flex:1;margin:0"><label>Off ms</label><input id="bkOff" type="number" min="20" max="5000" step="50" value="500"></div>
   </div>
   <button class="btn" id="bkSet" style="margin-top:10px">Apply blink pattern</button>
+  <div id="bkStatus" class="hint" style="margin-top:8px"></div>
   <button class="btn" id="cfgRefresh" style="margin-top:10px">Refresh config</button>
 </div>
 
@@ -554,7 +555,7 @@ function provRender(){
     const h=document.createElement('p'); h.className='hint'; h.style.margin='0'; h.textContent='On a phone: wake the node (tap it once) before connecting.'; b.append(h);
   }else{
     const def=String(defaultSens(pNode)); const surf=defaultSurface(pNode);
-    b.innerHTML=`<div class="info"><div class="kv">Target <b>node ${pNode}</b><span class="ok">Zone ${pZone.z}</span></div><div class="kv">Master <b>${sessionMasterMac||'—'}</b></div><div class="kv">Channel <b>${sessionChannel||'—'}</b></div></div>
+    b.innerHTML=`<div class="info"><div class="kv">Target <b>node ${pNode}</b><span class="ok">Zone ${pZone.z}</span></div><div class="kv">Master <b>${sessionMasterMac||'—'}</b></div><div class="kv">Channel <b>${sessionChannel||'—'}</b></div><div class="kv">Firmware <b id="pFw">—</b></div></div>
       <button class="btn pri" id="pVerify" style="margin-bottom:12px">Verify config</button><div id="pVout"></div>
       <div class="field" style="margin-top:12px"><label>Mount surface</label>
         <select id="pSurf"><option value="net">Net — sleeps, battery</option><option value="board">Board — always powered, ring LED</option></select></div>
@@ -587,6 +588,7 @@ async function provVerify(){
   const gid=g('id'),gmac=(g('mac')||'').toUpperCase(),gch=g('ch'),gths=g('ths')||'1',gp=g('prov');
   if(['1','2','3','4','5'].includes(gths)) $('pSens').value=gths;   // reflect what's actually on the node
   const gsurf=(st.match(/surf=(net|board)/)||[])[1]; if(gsurf&&$('pSurf')) $('pSurf').value=gsurf;
+  const gfw=(st.match(/fw=(\S+)/)||[])[1]; if(gfw&&$('pFw')) $('pFw').textContent=gfw;
   const wantSurf=$('pSurf')?$('pSurf').value:defaultSurface(pNode);
   const ok=gid===String(pNode)&&gmac===sessionMasterMac.toUpperCase()&&gch===String(sessionChannel)&&gp==='1'&&(!gsurf||gsurf===wantSurf);
   if(ok) out.innerHTML=`<div class="verify ok">✓ Up to date<br>node ${gid} · ${gsurf||wantSurf} · ch ${gch} · ${SENS[gths]||('ths '+gths)}</div>`;
@@ -608,7 +610,7 @@ $('scoreConnect').onclick=async()=>{
   curLog=null;
   if(await openPort('score')){
     connectedAt=Date.now(); for(const k in nodeHealth)delete nodeHealth[k];
-    $('armBtn').disabled=false; refreshMasterChip(); sendCmd('GETCFG');
+    $('armBtn').disabled=false; refreshMasterChip(); sendCmd('GETVER'); sendCmd('GETCFG');
     sendCmd('ROSTER=ON'); sendCmd('GETBATT'); $('swRoster').classList.add('on');
     setScoreResult('Ready — press Ball Released.','armed');
   }
@@ -629,6 +631,7 @@ function handleFrame(p){
   else if(verb==='ROSTER'){ (f.nodes||'').split(',').forEach(e=>{const q=e.split(':'); if(q.length>=6) updHealth(+q[0],q[3],q[5],+q[2],q[1]);}); renderNodesIfOpen(); }
   else if(verb==='BATT'){ (f.nodes||'').split(',').forEach(e=>{const q=e.split(':'); if(q.length>=4) updHealth(+q[0],q[1],q[2],+q[3]);}); renderNodesIfOpen(); }
   else if(verb==='READY'||verb==='CFG'){applyCfg(f);}
+  else if(verb==='VER'){ if(f.fw)$('fwVer').textContent=f.fw; }
   else if(verb==='OK'&&f.roster!=null){$('swRoster').classList.toggle('on',f.roster==='on');}
 }
 
@@ -672,9 +675,10 @@ function applyCfg(f){
   if(f.wait!=null&&!$('setWait').value)$('setWait').value=f.wait;
   if(f.roster!=null)$('swRoster').classList.toggle('on',f.roster==='on');
   if(f.blink){const m=f.blink.split(':'); if(m.length===3){$('bkCount').value=m[0];$('bkOn').value=m[1];$('bkOff').value=m[2];}}
+  if(f.fw)$('fwVer').textContent=f.fw;
   $('cfgLine').innerHTML=`cfg ch=<b>${f.ch??'?'}</b> wait=<b>${f.wait??'?'}</b> roster=<b>${f.roster??'?'}</b> blink=<b>${f.blink??'?'}</b>`;
 }
-$('settingsBtn').onclick=()=>{ curLog=null; if(port&&mode==='score')sendCmd('GETCFG'); sheet('sheet-settings'); };
+$('settingsBtn').onclick=()=>{ curLog=null; bkStatus(''); if(port&&mode==='score')sendCmd('GETCFG'); else bkStatus('Not connected — connect the master in the Score tab to change these.','e'); sheet('sheet-settings'); };
 $('setChBtn').onclick=async()=>{ if(mode!=='score')return; const r=await request('SETCH='+$('setCh').value.trim(),/^OK ch=|^ERR/); if(r)sendCmd('GETCFG'); };
 $('setWaitBtn').onclick=async()=>{ if(mode!=='score')return; const r=await request('SETWAIT='+$('setWait').value.trim(),/^OK wait=|^ERR/); if(r)sendCmd('GETCFG'); };
 $('swRoster').onclick=async()=>{ if(mode!=='score')return; const on=$('swRoster').classList.contains('on'); await request(on?'ROSTER=OFF':'ROSTER=ON',/^OK roster=/); };
@@ -682,7 +686,17 @@ let battTimer=null;
 function startBattPoll(){ stopBattPoll(); sendCmd('GETBATT'); battTimer=setInterval(()=>{if(writer&&mode==='score')sendCmd('GETBATT');},8000); }
 function stopBattPoll(){ if(battTimer){clearInterval(battTimer);battTimer=null;} }
 $('swBatt').onclick=()=>{ const on=$('swBatt').classList.toggle('on'); if(on&&mode==='score')startBattPoll(); else stopBattPoll(); };
-$('bkSet').onclick=async()=>{ if(mode!=='score'){L('connect master first','e');return;} const r=await request('BLINKCFG='+bcCount()+':'+bcOn()+':'+bcOff(),/^OK blinkcfg=|^ERR/); if(r)sendCmd('GETCFG'); };
+function bkStatus(t,c){ const e=$('bkStatus'); if(!e)return; e.textContent=t; e.style.color=c==='e'?'var(--miss)':c==='k'?'var(--ok)':'var(--muted)'; }
+$('bkSet').onclick=async()=>{
+  if(!(port && (mode==='score' || mode==='master'))){ bkStatus('Connect the master first (Score tab → Connect master).','e'); return; }
+  const cmd='BLINKCFG='+bcCount()+':'+bcOn()+':'+bcOff();
+  bkStatus('applying '+cmd+' …');
+  const r=await request(cmd,/^OK blinkcfg=|^ERR/);
+  if(!r){ bkStatus('No reply from master — check the connection and try again.','e'); return; }
+  if(r.startsWith('ERR')){ bkStatus('Master rejected it: '+r,'e'); return; }
+  bkStatus('Applied ✓  '+r.replace('OK blinkcfg=','')+' (times:on:off)','k');
+  sendCmd('GETCFG');
+};
 $('cfgRefresh').onclick=()=>{ if(mode==='score')sendCmd('GETCFG'); };
 
 $('editBtn').onclick=()=>{ editMode=!editMode; if(!editMode)saveLane(); renderBoth(); };
